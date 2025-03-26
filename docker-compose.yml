@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=sistema_familiar_db
+      - POSTGRES_USER=sistema_familiar_user
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024!@#
+    ports:
+      - "5439:5432"
+    networks:
+      - sistema-familiar-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sistema_familiar_user -d sistema_familiar_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  web:
+    image: kbokleber/sistema_familiar:latest
+    command: >
+      sh -c "echo 'Starting web service...' &&
+      while ! nc -z db 5432; do
+        echo 'Waiting for database...'
+        sleep 1
+      done &&
+      echo 'Database is ready!' &&
+      echo 'Running migrations...' &&
+      python manage.py migrate &&
+      echo 'Collecting static files...' &&
+      python manage.py collectstatic --noinput &&
+      echo 'Creating superuser...' &&
+      python create_superuser.py &&
+      echo 'Starting Gunicorn...' &&
+      gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8001:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - PYTHONUNBUFFERED=1
+      - POSTGRES_DB=sistema_familiar_db
+      - POSTGRES_USER=sistema_familiar_user
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024!@#
+    depends_on:
+      - db
+    networks:
+      - sistema-familiar-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  postgres_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
+
+networks:
+  sistema-familiar-net:
+    driver: overlay
+    attachable: true 

@@ -1,0 +1,40 @@
+{% extends 'healthcare/base_healthcare.html' %}
+{% load crispy_forms_tags %}
+
+{% block page_title %}
+    {% if form.instance.pk %}Editar Consulta{% else %}Nova Consulta{% endif %}
+{% endblock %}
+
+{% block healthcare_content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.family_member|as_crispy_field }}
+                    {{ form.doctor_name|as_crispy_field }}
+                    {{ form.specialty|as_crispy_field }}
+                    {{ form.appointment_date|as_crispy_field }}
+                    {{ form.location|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.reason|as_crispy_field }}
+                    {{ form.diagnosis|as_crispy_field }}
+                    {{ form.prescription|as_crispy_field }}
+                    {{ form.next_appointment|as_crispy_field }}
+                    {{ form.notes|as_crispy_field }}
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Salvar
+                </button>
+                <a href="{% url 'healthcare:appointment_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

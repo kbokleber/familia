@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Excluir Equipamento - {{ equipment.name }}{% endblock %}
+
+{% block main_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white py-3">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Confirmar Exclusão
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-circle text-danger display-1"></i>
+                        <h5 class="mt-3">Tem certeza que deseja excluir este equipamento?</h5>
+                        <p class="text-muted">
+                            Esta ação não pode ser desfeita. Todas as manutenções associadas a este equipamento também serão excluídas.
+                        </p>
+                    </div>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Detalhes do Equipamento</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Nome</dt>
+                                <dd class="col-sm-8">{{ equipment.name }}</dd>
+
+                                <dt class="col-sm-4">Tipo</dt>
+                                <dd class="col-sm-8">{{ equipment.get_type_display }}</dd>
+
+                                <dt class="col-sm-4">Marca</dt>
+                                <dd class="col-sm-8">{{ equipment.brand }}</dd>
+
+                                <dt class="col-sm-4">Modelo</dt>
+                                <dd class="col-sm-8">{{ equipment.model }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>
+                                Confirmar Exclusão
+                            </button>
+                            <a href="{% url 'maintenance:equipment_detail' equipment.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+    }
+
+    dt {
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    dd {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %} 

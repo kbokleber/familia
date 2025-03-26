@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saúde - {{ page_title }}{% endblock %}
+
+{% block sidebar_items %}
+<li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+       href="{% url 'healthcare:dashboard' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if 'family_member' in request.resolver_match.url_name %}active{% endif %}" 
+       href="{% url 'healthcare:family_member_list' %}">
+        <i class="bi bi-people"></i> Membros da Família
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if 'appointment' in request.resolver_match.url_name %}active{% endif %}" 
+       href="{% url 'healthcare:appointment_list' %}">
+        <i class="bi bi-calendar-check"></i> Consultas
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if 'procedure' in request.resolver_match.url_name %}active{% endif %}" 
+       href="{% url 'healthcare:procedure_list' %}">
+        <i class="bi bi-clipboard-pulse"></i> Procedimentos
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link {% if 'medication' in request.resolver_match.url_name %}active{% endif %}" 
+       href="{% url 'healthcare:medication_list' %}">
+        <i class="bi bi-capsule"></i> Medicamentos
+    </a>
+</li>
+{% endblock %}
+
+{% block main_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% block page_title %}{% endblock %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {% block page_actions %}{% endblock %}
+    </div>
+</div>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% block healthcare_content %}{% endblock %}
+{% endblock %} 

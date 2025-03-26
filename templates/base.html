@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Gestão Familiar{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            min-height: calc(100vh - 56px);
+            border-right: 1px solid #dee2e6;
+            transition: all 0.3s;
+        }
+
+        #sidebar .nav-link {
+            padding: 0.8rem 1.25rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #sidebar .nav-link:hover {
+            background: #e9ecef;
+        }
+
+        #sidebar .nav-link.active {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
+
+        #sidebar .nav-link i {
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            flex: 1;
+            min-height: calc(100vh - 56px);
+            background: #fff;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -280px;
+            }
+            
+            #sidebar.active {
+                margin-left: 0;
+            }
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .auth-container .card {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
+
+        .auth-container .card-header {
+            background: #0d6efd;
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            border-bottom: none;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .auth-container .card-body {
+            padding: 2rem;
+        }
+
+        .auth-container .form-control {
+            padding: 0.75rem 1rem;
+        }
+
+        .auth-container .btn {
+            padding: 0.75rem 1rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            {% if user.is_authenticated %}
+            <button class="navbar-toggler me-2" type="button" id="sidebar-toggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            {% endif %}
+            <a class="navbar-brand" href="/">Sistema de Gestão Familiar</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>{{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Meu Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" class="dropdown-item p-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Sair
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Entrar</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:register' %}">Registrar</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% if user.is_authenticated %}
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div id="sidebar" class="py-3">
+            <div class="px-3 mb-3">
+                <h5 class="text-muted">Menu</h5>
+            </div>
+            <ul class="nav flex-column">
+                <!-- Manutenção Module -->
+                <li class="nav-item">
+                    <div class="px-3 mb-2">
+                        <small class="text-muted">Manutenção</small>
+                    </div>
+                    <ul class="nav flex-column ms-2">
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'maintenance' in request.path and not 'maintenance/orders' in request.path and not 'maintenance/equipment' in request.path and not 'maintenance/order' in request.path %}active{% endif %}" href="{% url 'maintenance:dashboard' %}">
+                                <i class="bi bi-speedometer2"></i>
+                                Dashboard Manutenção
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'maintenance/equipment' in request.path %}active{% endif %}" href="{% url 'maintenance:equipment_create' %}">
+                                <i class="bi bi-tools"></i>
+                                Cadastrar Equipamento
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'maintenance/order/create' in request.path %}active{% endif %}" href="{% url 'maintenance:order_create' %}">
+                                <i class="bi bi-plus-circle"></i>
+                                Registrar Manutenção
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'maintenance/orders' in request.path %}active{% endif %}" href="{% url 'maintenance:order_list' %}">
+                                <i class="bi bi-clock-history"></i>
+                                Histórico de Manutenções
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Saúde Familiar Module -->
+                <li class="nav-item mt-3">
+                    <div class="px-3 mb-2">
+                        <small class="text-muted">Saúde Familiar</small>
+                    </div>
+                    <ul class="nav flex-column ms-2">
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'healthcare' in request.path and not 'healthcare/members' in request.path and not 'healthcare/appointments' in request.path and not 'healthcare/procedures' in request.path and not 'healthcare/medications' in request.path %}active{% endif %}" href="{% url 'healthcare:dashboard' %}">
+                                <i class="bi bi-speedometer2"></i>
+                                Dashboard Saúde
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'healthcare/members' in request.path %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
+                                <i class="bi bi-people"></i>
+                                Membros da Família
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'healthcare/appointments' in request.path %}active{% endif %}" href="{% url 'healthcare:appointment_list' %}">
+                                <i class="bi bi-calendar-check"></i>
+                                Consultas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'healthcare/procedures' in request.path %}active{% endif %}" href="{% url 'healthcare:procedure_list' %}">
+                                <i class="bi bi-clipboard-pulse"></i>
+                                Procedimentos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'healthcare/medications' in request.path %}active{% endif %}" href="{% url 'healthcare:medication_list' %}">
+                                <i class="bi bi-capsule"></i>
+                                Medicamentos
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Configurações -->
+                <li class="nav-item mt-3">
+                    <div class="px-3 mb-2">
+                        <small class="text-muted">Configurações</small>
+                    </div>
+                    <ul class="nav flex-column ms-2">
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'accounts/profile' in request.path %}active{% endif %}" href="{% url 'accounts:profile' %}">
+                                <i class="bi bi-gear"></i>
+                                Configurações
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content p-4">
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block main_content %}{% endblock %}
+        </div>
+    </div>
+    {% else %}
+    <div class="container">
+        {% if messages %}
+        <div class="messages mt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block auth_content %}{% endblock %}
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('sidebar-toggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

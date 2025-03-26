@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Histórico de Manutenções{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .filter-card {
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .table-card {
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+
+    .table-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .form-control, .form-select {
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .btn-filter {
+        padding: 0.75rem 1.5rem;
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-pendente {
+        background-color: #dc3545;
+    }
+
+    .badge-em_andamento {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .badge-concluida {
+        background-color: #198754;
+    }
+
+    .badge-cancelada {
+        background-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center my-4">
+        <h1 class="mb-0">Histórico de Manutenções</h1>
+        <a href="{% url 'maintenance:order_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>Nova Manutenção
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="equipment" class="form-label">Equipamento</label>
+                    <select name="equipment" id="equipment" class="form-select">
+                        <option value="">Todos os Equipamentos</option>
+                        {% for equipment in equipments %}
+                        <option value="{{ equipment.id }}" {% if selected_equipment == equipment.id %}selected{% endif %}>
+                            {{ equipment.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="start_date" class="form-label">Data Inicial</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="end_date" class="form-label">Data Final</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="d-grid w-100">
+                        <button type="submit" class="btn btn-primary btn-filter">
+                            <i class="bi bi-funnel me-2"></i>Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Você tem certeza que deseja excluir esta manutenção?</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Esta ação não pode ser desfeita!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="deleteForm" method="post" action="" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Confirmar Exclusão
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Manutenções -->
+    <div class="card table-card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Equipamento</th>
+                            <th>Empresa</th>
+                            <th>Data da Manutenção</th>
+                            <th>Custo</th>
+                            <th>Garantia até</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in maintenance_orders %}
+                        <tr>
+                            <td>{{ order.equipment }}</td>
+                            <td>{{ order.service_provider }}</td>
+                            <td>{{ order.completion_date }}</td>
+                            <td>R$ {{ order.cost }}</td>
+                            <td>
+                                {% if order.warranty_expiration %}
+                                    {{ order.warranty_expiration }}
+                                {% else %}
+                                    Sem garantia
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.status == 'pendente' %}
+                                    <span class="badge badge-pendente">Pendente</span>
+                                {% elif order.status == 'em_andamento' %}
+                                    <span class="badge badge-em_andamento">Em Andamento</span>
+                                {% elif order.status == 'concluida' %}
+                                    <span class="badge badge-concluida">Concluída</span>
+                                {% else %}
+                                    <span class="badge badge-cancelada">Cancelada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'maintenance:order_detail' order.pk %}" class="btn btn-sm btn-primary me-1" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'maintenance:order_update' order.pk %}" class="btn btn-sm btn-warning me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger delete-btn" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal"
+                                    data-url="{% url 'maintenance:order_delete' order.pk %}"
+                                    title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhuma manutenção encontrada</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if maintenance_orders.has_other_pages %}
+            <nav aria-label="Navegação de páginas" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if maintenance_orders.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ maintenance_orders.previous_page_number }}{% if request.GET.equipment %}&equipment={{ request.GET.equipment }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in maintenance_orders.paginator.page_range %}
+                    <li class="page-item {% if maintenance_orders.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.equipment %}&equipment={{ request.GET.equipment }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if maintenance_orders.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ maintenance_orders.next_page_number }}{% if request.GET.equipment %}&equipment={{ request.GET.equipment }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa o seletor de data com Flatpickr
+        flatpickr("#start_date", {
+            locale: "pt",
+            dateFormat: "Y-m-d",
+            allowInput: true
+        });
+
+        flatpickr("#end_date", {
+            locale: "pt",
+            dateFormat: "Y-m-d",
+            allowInput: true
+        });
+
+        // Manipula o clique no botão de excluir
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const deleteForm = document.getElementById('deleteForm');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                deleteForm.action = url;
+            });
+        });
+    });
+</script>
+{% endblock %} 

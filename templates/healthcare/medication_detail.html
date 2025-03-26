@@ -1,0 +1,112 @@
+{% extends 'healthcare/base_healthcare.html' %}
+
+{% block page_title %}Detalhes do Medicamento{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'healthcare:medication_edit' medication.pk %}" class="btn btn-primary">
+    <i class="bi bi-pencil"></i> Editar
+</a>
+<a href="{% url 'healthcare:medication_list' %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar
+</a>
+{% endblock %}
+
+{% block healthcare_content %}
+<div class="row">
+    <!-- Informações Básicas -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informações do Medicamento</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Membro da Família</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'healthcare:family_member_detail' medication.family_member.pk %}">
+                            {{ medication.family_member.name }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4">Nome do Medicamento</dt>
+                    <dd class="col-sm-8">{{ medication.name }}</dd>
+
+                    <dt class="col-sm-4">Dosagem</dt>
+                    <dd class="col-sm-8">{{ medication.dosage }}</dd>
+
+                    <dt class="col-sm-4">Frequência</dt>
+                    <dd class="col-sm-8">{{ medication.get_frequency_display }}</dd>
+
+                    <dt class="col-sm-4">Data de Início</dt>
+                    <dd class="col-sm-8">{{ medication.start_date|date:"d/m/Y" }}</dd>
+
+                    <dt class="col-sm-4">Data de Término</dt>
+                    <dd class="col-sm-8">{{ medication.end_date|date:"d/m/Y"|default:"Indeterminada" }}</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        {% if medication.is_active %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações da Prescrição -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informações da Prescrição</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Prescrito por</dt>
+                    <dd class="col-sm-8">{{ medication.prescribed_by|default:"Não especificado" }}</dd>
+
+                    <dt class="col-sm-4">Número da Receita</dt>
+                    <dd class="col-sm-8">{{ medication.prescription_number|default:"Não especificado" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instruções e Efeitos Colaterais -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Instruções Especiais</h5>
+            </div>
+            <div class="card-body">
+                {{ medication.instructions|default:"Nenhuma instrução especial."|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Efeitos Colaterais</h5>
+            </div>
+            <div class="card-body">
+                {{ medication.side_effects|default:"Nenhum efeito colateral registrado."|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Observações</h5>
+            </div>
+            <div class="card-body">
+                {{ medication.notes|default:"Nenhuma observação."|linebreaks }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

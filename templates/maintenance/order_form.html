@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_update %}Editar{% else %}Registrar{% endif %} Manutenção{% endblock %}
+
+{% block main_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-tools me-2"></i>
+                            {% if is_update %}
+                                Editar Manutenção
+                            {% else %}
+                                Registrar Manutenção Realizada
+                            {% endif %}
+                        </h4>
+                        <a href="{% if is_update %}{% url 'maintenance:order_detail' object.pk %}{% else %}{% url 'dashboard:home' %}{% endif %}" class="btn btn-outline-light">
+                            <i class="bi bi-arrow-left me-2"></i>Voltar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Equipamento e Status -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.equipment.id_for_label }}" class="form-label">
+                                    {{ form.equipment.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-wrench"></i>
+                                    </span>
+                                    {{ form.equipment }}
+                                </div>
+                                {% if form.equipment.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.equipment.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    {{ form.status.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </span>
+                                    {{ form.status }}
+                                </div>
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.status.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Empresa e Data -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.service_provider.id_for_label }}" class="form-label">
+                                    {{ form.service_provider.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-building"></i>
+                                    </span>
+                                    {{ form.service_provider }}
+                                </div>
+                                {% if form.service_provider.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.service_provider.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.completion_date.id_for_label }}" class="form-label">
+                                    {{ form.completion_date.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-calendar"></i>
+                                    </span>
+                                    {{ form.completion_date }}
+                                </div>
+                                {% if form.completion_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.completion_date.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Custo e Garantia -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.cost.id_for_label }}" class="form-label">
+                                    {{ form.cost.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-currency-dollar"></i>
+                                    </span>
+                                    {{ form.cost }}
+                                </div>
+                                {% if form.cost.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cost.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.warranty_expiration.id_for_label }}" class="form-label">
+                                    {{ form.warranty_expiration.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-shield-check"></i>
+                                    </span>
+                                    {{ form.warranty_expiration }}
+                                </div>
+                                {% if form.warranty_expiration.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.warranty_expiration.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="mb-4">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {{ form.description.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-file-text"></i>
+                                </span>
+                                {{ form.description }}
+                            </div>
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Termos da Garantia -->
+                        <div class="mb-4">
+                            <label for="{{ form.warranty_terms.id_for_label }}" class="form-label">
+                                {{ form.warranty_terms.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-shield"></i>
+                                </span>
+                                {{ form.warranty_terms }}
+                            </div>
+                            {% if form.warranty_terms.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.warranty_terms.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Nota Fiscal -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.invoice_number.id_for_label }}" class="form-label">
+                                    {{ form.invoice_number.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-receipt"></i>
+                                    </span>
+                                    {{ form.invoice_number }}
+                                </div>
+                                {% if form.invoice_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.invoice_number.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.invoice_file.id_for_label }}" class="form-label">
+                                    {{ form.invoice_file.label }}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </span>
+                                    {{ form.invoice_file }}
+                                </div>
+                                {% if form.invoice_file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.invoice_file.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Observações -->
+                        <div class="mb-4">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                {{ form.notes.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-pencil"></i>
+                                </span>
+                                {{ form.notes }}
+                            </div>
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% if is_update %}{% url 'maintenance:order_detail' object.pk %}{% else %}{% url 'dashboard:home' %}{% endif %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>{% if is_update %}Salvar Alterações{% else %}Registrar Manutenção{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border: 1px solid #dee2e6;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+    }
+
+    .input-group-text i {
+        font-size: 1.1rem;
+        color: #6c757d;
+    }
+    
+    input[type="date"].form-control {
+        min-height: 48px;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: #212529;
+    }
+
+    .invalid-feedback {
+        font-size: 0.875rem;
+        color: #dc3545;
+        margin-top: 0.25rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+    }
+
+    .btn-lg {
+        padding: 1rem 2rem;
+    }
+
+    .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+        margin-left: -1px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .input-group > :not(:last-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    /* Estilo específico para o campo de upload de arquivo */
+    input[type="file"].form-control {
+        padding: 0.375rem 0.75rem;
+        line-height: 1.5;
+    }
+
+    input[type="file"].form-control::-webkit-file-upload-button {
+        padding: 0.375rem 0.75rem;
+        margin: -0.375rem -0.75rem;
+        margin-inline-end: 0.75rem;
+        color: #212529;
+        background-color: #e9ecef;
+        border: 0 solid;
+        border-inline-end: inherit;
+        border-radius: 0.375rem;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const formControls = document.querySelectorAll('input:not([type="date"]):not([type="file"]), select, textarea');
+        formControls.forEach(function(element) {
+            if (!element.classList.contains('form-control') && !element.classList.contains('form-select')) {
+                if (element.tagName === 'SELECT') {
+                    element.classList.add('form-select');
+                } else {
+                    element.classList.add('form-control');
+                }
+            }
+        });
+
+        // Ajusta a altura do input de data para corresponder aos outros campos
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(function(element) {
+            element.classList.add('form-control');
+        });
+
+        // Ajusta o estilo do input de arquivo
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(function(element) {
+            element.classList.add('form-control');
+        });
+    });
+</script>
+{% endblock %} 

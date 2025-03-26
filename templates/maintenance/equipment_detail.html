@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes do Equipamento - {{ equipment.name }}{% endblock %}
+
+{% block main_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-tools me-2"></i>
+                        Detalhes do Equipamento
+                    </h4>
+                    <div>
+                        <a href="{% url 'maintenance:equipment_update' equipment.pk %}" class="btn btn-light btn-sm me-2">
+                            <i class="bi bi-pencil me-2"></i>
+                            Editar
+                        </a>
+                        <a href="{% url 'maintenance:equipment_list' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Informações Básicas</h5>
+                            <dl class="row">
+                                <dt class="col-sm-4">Nome</dt>
+                                <dd class="col-sm-8">{{ equipment.name }}</dd>
+
+                                <dt class="col-sm-4">Tipo</dt>
+                                <dd class="col-sm-8">{{ equipment.get_type_display }}</dd>
+
+                                <dt class="col-sm-4">Marca</dt>
+                                <dd class="col-sm-8">{{ equipment.brand }}</dd>
+
+                                <dt class="col-sm-4">Modelo</dt>
+                                <dd class="col-sm-8">{{ equipment.model }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Informações Adicionais</h5>
+                            <dl class="row">
+                                <dt class="col-sm-4">Número de Série</dt>
+                                <dd class="col-sm-8">{{ equipment.serial_number|default:"-" }}</dd>
+
+                                <dt class="col-sm-4">Data de Compra</dt>
+                                <dd class="col-sm-8">{{ equipment.purchase_date|date:"d/m/Y"|default:"-" }}</dd>
+
+                                <dt class="col-sm-4">Data de Cadastro</dt>
+                                <dd class="col-sm-8">{{ equipment.created_at|date:"d/m/Y H:i" }}</dd>
+
+                                <dt class="col-sm-4">Última Atualização</dt>
+                                <dd class="col-sm-8">{{ equipment.updated_at|date:"d/m/Y H:i" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    {% if equipment.notes %}
+                    <div class="mb-4">
+                        <h5 class="text-muted mb-3">Observações</h5>
+                        <div class="bg-light p-3 rounded">
+                            {{ equipment.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <h5 class="text-muted mb-3">Histórico de Manutenções</h5>
+                        {% if maintenance_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Status</th>
+                                        <th>Descrição</th>
+                                        <th>Custo</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in maintenance_orders %}
+                                    <tr>
+                                        <td>{{ order.completion_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == 'concluida' %}bg-success{% elif order.status == 'em_andamento' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ order.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ order.description|truncatechars:50 }}</td>
+                                        <td>R$ {{ order.cost|default:"0,00" }}</td>
+                                        <td>
+                                            <a href="{% url 'maintenance:order_detail' order.pk %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">Nenhuma manutenção registrada para este equipamento.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        border-bottom: none;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+    }
+
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+    }
+
+    dt {
+        font-weight: 500;
+        color: #6c757d;
+    }
+
+    dd {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %} 

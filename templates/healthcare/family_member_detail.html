@@ -1,0 +1,231 @@
+{% extends 'healthcare/base_healthcare.html' %}
+
+{% block page_title %}Detalhes do Membro da Família{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'healthcare:family_member_edit' member.pk %}" class="btn btn-primary">
+    <i class="bi bi-pencil"></i> Editar
+</a>
+<a href="{% url 'healthcare:family_member_list' %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar
+</a>
+{% endblock %}
+
+{% block healthcare_content %}
+<div class="row">
+    <!-- Informações Pessoais -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if member.photo %}
+                    <img src="{{ member.photo.url }}" alt="Foto do membro" class="img-thumbnail mb-3" style="max-width: 200px;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px; margin: 0 auto;">
+                        <i class="bi bi-person-circle" style="font-size: 8rem; color: #dee2e6;"></i>
+                    </div>
+                {% endif %}
+                <h4 class="card-title">{{ member.name }}</h4>
+                <p class="text-muted">{{ member.relationship }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações de Saúde -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informações de Saúde</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Data de Nascimento</dt>
+                    <dd class="col-sm-8">{{ member.birth_date|date:"d/m/Y" }}</dd>
+
+                    <dt class="col-sm-4">Gênero</dt>
+                    <dd class="col-sm-8">{{ member.get_gender_display }}</dd>
+
+                    <dt class="col-sm-4">Tipo Sanguíneo</dt>
+                    <dd class="col-sm-8">{{ member.blood_type }}</dd>
+
+                    <dt class="col-sm-4">Alergias</dt>
+                    <dd class="col-sm-8">{{ member.allergies|default:"Nenhuma" }}</dd>
+
+                    <dt class="col-sm-4">Condições Crônicas</dt>
+                    <dd class="col-sm-8">{{ member.chronic_conditions|default:"Nenhuma" }}</dd>
+
+                    <dt class="col-sm-4">Contato de Emergência</dt>
+                    <dd class="col-sm-8">{{ member.emergency_contact }}</dd>
+
+                    <dt class="col-sm-4">Telefone de Emergência</dt>
+                    <dd class="col-sm-8">{{ member.emergency_phone }}</dd>
+
+                    <dt class="col-sm-4">Observações</dt>
+                    <dd class="col-sm-8">{{ member.notes|default:"Nenhuma" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico de Consultas -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Histórico de Consultas</h5>
+                <a href="{% url 'healthcare:appointment_create' %}?family_member={{ member.pk }}" 
+                   class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle"></i> Nova Consulta
+                </a>
+            </div>
+            <div class="card-body">
+                {% if appointments %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Médico</th>
+                                <th>Especialidade</th>
+                                <th>Local</th>
+                                <th>Motivo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                            <tr>
+                                <td>{{ appointment.appointment_date|date:"d/m/Y H:i" }}</td>
+                                <td>{{ appointment.doctor_name }}</td>
+                                <td>{{ appointment.specialty }}</td>
+                                <td>{{ appointment.location }}</td>
+                                <td>{{ appointment.reason }}</td>
+                                <td>
+                                    <a href="{% url 'healthcare:appointment_edit' appointment.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nenhuma consulta registrada.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico de Procedimentos -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Histórico de Procedimentos</h5>
+                <a href="{% url 'healthcare:procedure_create' %}?family_member={{ member.pk }}" 
+                   class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle"></i> Novo Procedimento
+                </a>
+            </div>
+            <div class="card-body">
+                {% if procedures %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Procedimento</th>
+                                <th>Médico</th>
+                                <th>Local</th>
+                                <th>Descrição</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for procedure in procedures %}
+                            <tr>
+                                <td>{{ procedure.procedure_date|date:"d/m/Y H:i" }}</td>
+                                <td>{{ procedure.procedure_name }}</td>
+                                <td>{{ procedure.doctor_name }}</td>
+                                <td>{{ procedure.location }}</td>
+                                <td>{{ procedure.description }}</td>
+                                <td>
+                                    <a href="{% url 'healthcare:procedure_edit' procedure.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nenhum procedimento registrado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico de Medicamentos -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Histórico de Medicamentos</h5>
+                <a href="{% url 'healthcare:medication_create' %}?family_member={{ member.pk }}" 
+                   class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle"></i> Novo Medicamento
+                </a>
+            </div>
+            <div class="card-body">
+                {% if medications %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Dosagem</th>
+                                <th>Frequência</th>
+                                <th>Data de Início</th>
+                                <th>Data de Término</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medication in medications %}
+                            <tr>
+                                <td>{{ medication.name }}</td>
+                                <td>{{ medication.dosage }}</td>
+                                <td>{{ medication.get_frequency_display }}</td>
+                                <td>{{ medication.start_date|date:"d/m/Y" }}</td>
+                                <td>{{ medication.end_date|date:"d/m/Y"|default:"Indeterminada" }}</td>
+                                <td>
+                                    {% if medication.is_active %}
+                                    <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'healthcare:medication_detail' medication.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'healthcare:medication_edit' medication.pk %}" 
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Nenhum medicamento registrado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

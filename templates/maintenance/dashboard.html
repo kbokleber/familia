@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Manutenção{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css" rel="stylesheet">
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .stats-card {
+        height: 100%;
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+
+    .stats-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .stats-card .card-title {
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+    }
+
+    .stats-card .card-text {
+        color: #212529;
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    .chart-card {
+        height: 100%;
+        border: none;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+
+    .chart-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .chart-card .card-title {
+        color: #212529;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid px-4">
+    <h1 class="my-4">Dashboard de Manutenção</h1>
+    
+    <!-- Cards de Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Manutenções Pendentes</h5>
+                    <h2 class="card-text">{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Em Andamento</h5>
+                    <h2 class="card-text">{{ in_progress_count }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Concluídas</h5>
+                    <h2 class="card-text">{{ completed_count }}</h2>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Equipamentos</h5>
+                    <h2 class="card-text">{{ equipment_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-6">
+            <div class="chart-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Manutenções por Status</h5>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="chart-card card">
+                <div class="card-body">
+                    <h5 class="card-title">Custos de Manutenção</h5>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimas Manutenções -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Últimas Manutenções Realizadas</h5>
+                        <div>
+                            <a href="{% url 'maintenance:order_list' %}" class="btn btn-sm btn-outline-secondary me-2">
+                                <i class="bi bi-list me-1"></i>Ver Todas
+                            </a>
+                            <a href="{% url 'maintenance:order_create' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-plus-lg me-1"></i>Nova Manutenção
+                            </a>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Equipamento</th>
+                                    <th>Empresa</th>
+                                    <th>Data da Manutenção</th>
+                                    <th>Custo</th>
+                                    <th>Status</th>
+                                    <th>Garantia até</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_maintenance %}
+                                <tr>
+                                    <td>{{ order.equipment }}</td>
+                                    <td>{{ order.service_provider }}</td>
+                                    <td>{{ order.completion_date }}</td>
+                                    <td>R$ {{ order.cost }}</td>
+                                    <td>
+                                        {% if order.status == 'pendente' %}
+                                            <span class="badge bg-danger">Pendente</span>
+                                        {% elif order.status == 'em_andamento' %}
+                                            <span class="badge bg-warning text-dark">Em Andamento</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Concluída</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.warranty_expiration %}
+                                            {{ order.warranty_expiration }}
+                                        {% else %}
+                                            Sem garantia
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'maintenance:order_detail' order.pk %}" class="btn btn-sm btn-primary me-1" title="Ver Detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'maintenance:order_update' order.pk %}" class="btn btn-sm btn-warning me-1" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger delete-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal"
+                                            data-url="{% url 'maintenance:order_delete' order.pk %}"
+                                            title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">Nenhuma manutenção registrada</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+// Gráfico de Status
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Pendentes', 'Em Andamento', 'Concluídas'],
+        datasets: [{
+            data: [{{ pending_count }}, {{ in_progress_count }}, {{ completed_count }}],
+            backgroundColor: ['#dc3545', '#ffc107', '#198754']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Gráfico de Custos
+const costCtx = document.getElementById('costChart').getContext('2d');
+new Chart(costCtx, {
+    type: 'line',
+    data: {
+        labels: {{ months|safe }},
+        datasets: [{
+            label: 'Custos de Manutenção',
+            data: {{ costs|safe }},
+            borderColor: '#0d6efd',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

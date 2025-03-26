@@ -1,0 +1,152 @@
+/* Custom styles */
+
+/* Body and general styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card styles */
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Dashboard cards */
+.dashboard-card {
+    height: 100%;
+    border-left: 4px solid transparent;
+}
+
+.dashboard-card.pending {
+    border-left-color: #dc3545;
+}
+
+.dashboard-card.in-progress {
+    border-left-color: #ffc107;
+}
+
+.dashboard-card.completed {
+    border-left-color: #198754;
+}
+
+/* Status badges */
+.badge.status-pending {
+    background-color: #dc3545;
+}
+
+.badge.status-in-progress {
+    background-color: #ffc107;
+}
+
+.badge.status-completed {
+    background-color: #198754;
+}
+
+/* Priority indicators */
+.priority-urgent {
+    color: #dc3545;
+}
+
+.priority-high {
+    color: #fd7e14;
+}
+
+.priority-medium {
+    color: #ffc107;
+}
+
+.priority-low {
+    color: #198754;
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Table styles */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Custom button styles */
+.btn-floating {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.btn-floating i {
+    font-size: 24px;
+}
+
+/* Notification styles */
+.notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(50%, -50%);
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .btn-floating {
+        bottom: 1rem;
+        right: 1rem;
+        width: 50px;
+        height: 50px;
+    }
+
+    .btn-floating i {
+        font-size: 20px;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+} 
