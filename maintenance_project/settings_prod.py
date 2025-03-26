@@ -4,7 +4,7 @@ from .settings import *
 # Configurações de Segurança
 DEBUG = True  # Temporariamente True para debug
 SECRET_KEY = 'django-insecure-sua-chave-secreta-muito-segura-123'  # Temporário para desenvolvimento
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '89.116.186.192', '89.116.186.192:8001']
 
 # Configurações do Banco de Dados
 DATABASES = {

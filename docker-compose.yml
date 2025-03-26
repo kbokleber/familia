@@ -8,11 +8,11 @@ services:
     env_file:
       - .env
     ports:
-      - "5439:5432"
+      - "5440:5432"
     networks:
       - sistema-familiar-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U sistema_familiar_user -d sistema_familiar_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,7 +30,8 @@ services:
   web:
     image: kbokleber/sistema_familiar:latest
     command: >
-      sh -c "echo 'Starting web service...' &&
+      sh -c "
+      echo 'Starting web service...' &&
       while ! nc -z db 5432; do
         echo 'Waiting for database...'
         sleep 1
@@ -43,9 +44,9 @@ services:
       echo 'Creating superuser...' &&
       python create_superuser.py &&
       echo 'Starting Gunicorn...' &&
-      gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug"
+      gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug
+      "
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
