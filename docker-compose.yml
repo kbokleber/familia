@@ -42,13 +42,13 @@ services:
       done &&
       echo 'Database is ready!' &&
       echo 'Running migrations...' &&
-      python manage.py migrate &&
+      DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod python manage.py migrate &&
       echo 'Collecting static files...' &&
-      python manage.py collectstatic --noinput &&
+      DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod python manage.py collectstatic --noinput &&
       echo 'Creating superuser...' &&
-      python create_superuser.py &&
+      DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod python create_superuser.py &&
       echo 'Starting Gunicorn...' &&
-      gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug"
+      DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug"
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -56,10 +56,10 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=seu-dominio.com,www.seu-dominio.com
+      - DJANGO_SECRET_KEY=sua-chave-secreta-muito-segura
       - DB_HOST=db
       - DB_PORT=5432
       - PYTHONUNBUFFERED=1
