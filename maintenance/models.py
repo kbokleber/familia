@@ -1,33 +1,36 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.urls import reverse
+
+User = get_user_model()
 
 class Equipment(models.Model):
     TYPES = (
-        ('eletrodomestico', 'Eletrodoméstico'),
         ('eletronico', 'Eletrônico'),
+        ('eletrodomestico', 'Eletrodoméstico'),
+        ('movel', 'Móvel'),
         ('veiculo', 'Veículo'),
         ('outro', 'Outro'),
     )
 
-    name = models.CharField('Nome', max_length=100)
-    type = models.CharField('Tipo', max_length=20, choices=TYPES)
-    brand = models.CharField('Marca', max_length=100)
-    model = models.CharField('Modelo', max_length=100)
-    serial_number = models.CharField('Número de Série', max_length=100, blank=True)
-    purchase_date = models.DateField('Data de Compra', null=True, blank=True)
-    notes = models.TextField('Observações', blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Proprietário')
-    created_at = models.DateTimeField('Data de Criação', auto_now_add=True)
-    updated_at = models.DateTimeField('Última Atualização', auto_now=True)
+    name = models.CharField(max_length=100, verbose_name='Nome')
+    type = models.CharField(max_length=50, choices=TYPES, null=True, blank=True, verbose_name='Tipo')
+    brand = models.CharField(max_length=100, null=True, blank=True, verbose_name='Marca')
+    model = models.CharField(max_length=100, null=True, blank=True, verbose_name='Modelo')
+    serial_number = models.CharField(max_length=100, null=True, blank=True, verbose_name='Número de Série')
+    purchase_date = models.DateField(null=True, blank=True, verbose_name='Data de Compra')
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Proprietário')
+    notes = models.TextField(blank=True, verbose_name='Observações')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Data de Atualização')
+
+    def __str__(self):
+        return self.name
 
     class Meta:
         verbose_name = 'Equipamento'
         verbose_name_plural = 'Equipamentos'
         ordering = ['-created_at']
-
-    def __str__(self):
-        return f'{self.name} - {self.brand} {self.model}'
 
     def get_absolute_url(self):
         return reverse('maintenance:equipment_detail', kwargs={'pk': self.pk})

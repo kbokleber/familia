@@ -5,12 +5,15 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth.models import User
 from .models import Profile
-from .forms import ProfileForm
+from .forms import ProfileForm, CustomUserCreationForm, CustomUserChangeForm
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse
+import django
+import sys
+from django.conf import settings
 
 class SuperUserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -78,70 +81,47 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
             messages.success(self.request, 'Perfil atualizado com sucesso!')
         return response
 
-class SettingsView(LoginRequiredMixin, SuperUserRequiredMixin, TemplateView):
+class SettingsView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    model = User
     template_name = 'accounts/settings.html'
+    context_object_name = 'users'
+
+    def test_func(self):
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['users'] = User.objects.all().order_by('-date_joined')
+        context['users'] = User.objects.all()
+        context['django_version'] = django.get_version()
+        context['python_version'] = sys.version.split()[0]
+        context['environment'] = 'Desenvolvimento' if settings.DEBUG else 'Produção'
+        context['debug'] = settings.DEBUG
+        context['database'] = 'SQLite' if settings.DEBUG else 'PostgreSQL'
         return context
 
     def post(self, request, *args, **kwargs):
-        action = kwargs.get('action', request.POST.get('action'))
-        
-        if action == 'create_user':
-            username = request.POST.get('username')
-            email = request.POST.get('email')
-            password1 = request.POST.get('password1')
-            password2 = request.POST.get('password2')
-            first_name = request.POST.get('first_name')
-            last_name = request.POST.get('last_name')
+        action = request.POST.get('action')
+        user_id = request.POST.get('user_id')
 
-            if password1 != password2:
-                messages.error(request, 'As senhas não coincidem.')
-                return redirect('accounts:settings')
-
-            try:
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    password=password1,
-                    first_name=first_name,
-                    last_name=last_name
-                )
-                messages.success(request, f'Usuário {username} criado com sucesso!')
-            except Exception as e:
-                messages.error(request, f'Erro ao criar usuário: {str(e)}')
-
-        elif action == 'update_user':
-            user_id = kwargs.get('pk')
-            try:
-                user = User.objects.get(id=user_id)
-                user.email = request.POST.get('email')
-                user.first_name = request.POST.get('first_name')
-                user.last_name = request.POST.get('last_name')
-                user.is_active = request.POST.get('is_active') == 'on'
-                user.save()
-                messages.success(request, f'Usuário {user.username} atualizado com sucesso!')
-            except User.DoesNotExist:
-                messages.error(request, 'Usuário não encontrado.')
-            except Exception as e:
-                messages.error(request, f'Erro ao atualizar usuário: {str(e)}')
-
-        elif action == 'delete_user':
-            user_id = kwargs.get('pk')
-            try:
-                user = User.objects.get(id=user_id)
-                if user != request.user:
-                    username = user.username
-                    user.delete()
-                    messages.success(request, f'Usuário {username} excluído com sucesso!')
-                else:
-                    messages.error(request, 'Você não pode excluir seu próprio usuário.')
-            except User.DoesNotExist:
-                messages.error(request, 'Usuário não encontrado.')
-            except Exception as e:
-                messages.error(request, f'Erro ao excluir usuário: {str(e)}')
+        if action == 'create':
+            form = CustomUserCreationForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Usuário criado com sucesso!')
+            else:
+                messages.error(request, 'Erro ao criar usuário. Verifique os dados.')
+        elif action == 'update' and user_id:
+            user = get_object_or_404(User, id=user_id)
+            form = CustomUserChangeForm(request.POST, instance=user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Usuário atualizado com sucesso!')
+            else:
+                messages.error(request, 'Erro ao atualizar usuário. Verifique os dados.')
+        elif action == 'delete' and user_id:
+            user = get_object_or_404(User, id=user_id)
+            user.delete()
+            messages.success(request, 'Usuário excluído com sucesso!')
 
         return redirect('accounts:settings')
 
@@ -149,21 +129,21 @@ def is_admin(user):
     return user.is_superuser
 
 class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = get_user_model()
+    model = User
     template_name = 'accounts/user_list.html'
     context_object_name = 'users'
 
     def test_func(self):
-        return is_admin(self.request.user)
+        return self.request.user.is_superuser
 
 class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = get_user_model()
-    form_class = UserCreationForm
+    model = User
+    form_class = CustomUserCreationForm
     template_name = 'accounts/user_form.html'
     success_url = reverse_lazy('accounts:user_list')
 
     def test_func(self):
-        return is_admin(self.request.user)
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -171,27 +151,45 @@ class UserCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return response
 
 class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = get_user_model()
-    form_class = UserChangeForm
+    model = User
+    form_class = CustomUserChangeForm
     template_name = 'accounts/user_form.html'
     success_url = reverse_lazy('accounts:user_list')
 
     def test_func(self):
-        return is_admin(self.request.user)
+        return self.request.user.is_superuser
 
     def form_valid(self, form):
         response = super().form_valid(form)
         messages.success(self.request, 'Usuário atualizado com sucesso!')
         return response
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['instance'] = self.get_object()
+        return kwargs
+
 class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model = get_user_model()
+    model = User
+    template_name = 'accounts/user_confirm_delete.html'
     success_url = reverse_lazy('accounts:user_list')
 
     def test_func(self):
-        return is_admin(self.request.user)
+        return self.request.user.is_superuser
 
     def delete(self, request, *args, **kwargs):
         response = super().delete(request, *args, **kwargs)
-        messages.success(self.request, 'Usuário excluído com sucesso!')
-        return response 
+        messages.success(request, 'Usuário excluído com sucesso!')
+        return response
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=request.user.profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil atualizado com sucesso!')
+            return redirect('accounts:profile')
+    else:
+        form = ProfileForm(instance=request.user.profile)
+    return render(request, 'accounts/profile.html', {'form': form}) 

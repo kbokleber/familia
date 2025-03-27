@@ -8,17 +8,18 @@
     <h1 class="mb-4">Configurações</h1>
 
     <div class="row">
-        <div class="col-md-4">
+        <!-- Menu Lateral -->
+        <div class="col-md-3">
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Menu de Configurações</h5>
                 </div>
                 <div class="list-group list-group-flush">
                     <a href="{% url 'accounts:profile' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-user"></i> Perfil
+                        <i class="fas fa-user"></i> Meu Perfil
                     </a>
                     {% if user.is_superuser %}
-                    <a href="{% url 'accounts:user_list' %}" class="list-group-item list-group-item-action">
+                    <a href="#userManagement" class="list-group-item list-group-item-action" data-bs-toggle="collapse">
                         <i class="fas fa-users"></i> Gerenciar Usuários
                     </a>
                     {% endif %}
@@ -29,85 +30,44 @@
             </div>
         </div>
 
-        <div class="col-md-8">
+        <!-- Conteúdo Principal -->
+        <div class="col-md-9">
+            <!-- Gerenciamento de Usuários (apenas para superusuários) -->
             {% if user.is_superuser %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Criar Novo Usuário</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'accounts:settings' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="create_user">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="username" class="form-label">Nome de Usuário</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="email" class="form-label">E-mail</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">Nome</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Sobrenome</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="password1" class="form-label">Senha</label>
-                                <input type="password" class="form-control" id="password1" name="password1" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="password2" class="form-label">Confirmar Senha</label>
-                                <input type="password" class="form-control" id="password2" name="password2" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Criar Usuário</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Usuários do Sistema</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Usuário</th>
-                                    <th>Nome</th>
-                                    <th>E-mail</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for user in users %}
-                                <tr>
-                                    <td>{{ user.username }}</td>
-                                    <td>{{ user.get_full_name }}</td>
-                                    <td>{{ user.email }}</td>
-                                    <td>
-                                        {% if user.is_active %}
-                                        <span class="badge bg-success">Ativo</span>
-                                        {% else %}
-                                        <span class="badge bg-danger">Inativo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <form method="post" action="{% url 'accounts:settings' %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="update_user">
-                                            <input type="hidden" name="pk" value="{{ user.id }}">
+            <div class="collapse" id="userManagement">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Gerenciar Usuários</h5>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newUserModal">
+                            <i class="fas fa-user-plus"></i> Novo Usuário
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Usuário</th>
+                                        <th>Nome</th>
+                                        <th>E-mail</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.get_full_name }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>
+                                            {% if user.is_active %}
+                                            <span class="badge bg-success">Ativo</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Inativo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
                                             <div class="btn-group">
                                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
                                                     <i class="fas fa-edit"></i>
@@ -118,91 +78,93 @@
                                                 </button>
                                                 {% endif %}
                                             </div>
-                                        </form>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
 
-                                <!-- Modal de Edição -->
-                                <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Editar Usuário</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="post" action="{% url 'accounts:settings' %}">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="update_user">
-                                                <input type="hidden" name="pk" value="{{ user.id }}">
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label for="email{{ user.id }}" class="form-label">E-mail</label>
-                                                        <input type="email" class="form-control" id="email{{ user.id }}" name="email" value="{{ user.email }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="first_name{{ user.id }}" class="form-label">Nome</label>
-                                                        <input type="text" class="form-control" id="first_name{{ user.id }}" name="first_name" value="{{ user.first_name }}">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label for="last_name{{ user.id }}" class="form-label">Sobrenome</label>
-                                                        <input type="text" class="form-control" id="last_name{{ user.id }}" name="last_name" value="{{ user.last_name }}">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="is_active{{ user.id }}" name="is_active" {% if user.is_active %}checked{% endif %}>
-                                                            <label class="form-check-label" for="is_active{{ user.id }}">
-                                                                Usuário Ativo
-                                                            </label>
+                                    <!-- Modal de Edição -->
+                                    <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Editar Usuário</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" action="{% url 'accounts:settings' %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="update_user">
+                                                    <input type="hidden" name="pk" value="{{ user.id }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="email{{ user.id }}" class="form-label">E-mail</label>
+                                                            <input type="email" class="form-control" id="email{{ user.id }}" name="email" value="{{ user.email }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="first_name{{ user.id }}" class="form-label">Nome</label>
+                                                            <input type="text" class="form-control" id="first_name{{ user.id }}" name="first_name" value="{{ user.first_name }}">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="last_name{{ user.id }}" class="form-label">Sobrenome</label>
+                                                            <input type="text" class="form-control" id="last_name{{ user.id }}" name="last_name" value="{{ user.last_name }}">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" id="is_active{{ user.id }}" name="is_active" {% if user.is_active %}checked{% endif %}>
+                                                                <label class="form-check-label" for="is_active{{ user.id }}">
+                                                                    Usuário Ativo
+                                                                </label>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Modal de Exclusão -->
-                                <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Confirmar Exclusão</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p>Tem certeza que deseja excluir o usuário "{{ user.username }}"?</p>
-                                                <div class="alert alert-warning">
-                                                    <i class="fas fa-exclamation-triangle"></i>
-                                                    Esta ação não pode ser desfeita!
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <form method="post" action="{% url 'accounts:settings' %}" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="action" value="delete_user">
-                                                    <input type="hidden" name="pk" value="{{ user.id }}">
-                                                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                                                    </div>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">Nenhum usuário cadastrado</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+
+                                    <!-- Modal de Exclusão -->
+                                    <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Tem certeza que deseja excluir o usuário "{{ user.username }}"?</p>
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        Esta ação não pode ser desfeita!
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <form method="post" action="{% url 'accounts:settings' %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="action" value="delete_user">
+                                                        <input type="hidden" name="pk" value="{{ user.id }}">
+                                                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Nenhum usuário cadastrado</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-            {% else %}
+            {% endif %}
+
+            <!-- Informações do Sistema -->
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Informações do Sistema</h5>
@@ -215,7 +177,52 @@
                     <p><strong>Banco de Dados:</strong> {{ database }}</p>
                 </div>
             </div>
-            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Novo Usuário -->
+<div class="modal fade" id="newUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'accounts:settings' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_user">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nome de Usuário</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Sobrenome</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password1" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="password1" name="password1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password2" class="form-label">Confirmar Senha</label>
+                        <input type="password" class="form-control" id="password2" name="password2" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Usuário</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

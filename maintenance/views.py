@@ -8,6 +8,10 @@ from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
 import json
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 
 class CreateOrderView(LoginRequiredMixin, CreateView):
     model = MaintenanceOrder
@@ -47,7 +51,7 @@ class DetailOrderView(LoginRequiredMixin, DetailView):
     context_object_name = 'order'
 
     def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+        return MaintenanceOrder.objects.all()
 
 class DeleteOrderView(LoginRequiredMixin, DeleteView):
     model = MaintenanceOrder
@@ -55,7 +59,7 @@ class DeleteOrderView(LoginRequiredMixin, DeleteView):
     template_name = 'maintenance/order_confirm_delete.html'
 
     def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+        return MaintenanceOrder.objects.all()
 
 class UpdateOrderView(LoginRequiredMixin, UpdateView):
     model = MaintenanceOrder
@@ -78,7 +82,7 @@ class UpdateOrderView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('maintenance:order_detail', kwargs={'pk': self.object.pk})
 
     def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+        return MaintenanceOrder.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -92,7 +96,7 @@ class MaintenanceOrderListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = MaintenanceOrder.objects.filter(created_by=self.request.user)
+        queryset = MaintenanceOrder.objects.all()
         
         # Filtro por equipamento
         equipment_id = self.request.GET.get('equipment')
@@ -121,44 +125,94 @@ class MaintenanceOrderListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['equipments'] = Equipment.objects.filter(owner=self.request.user)
+        context['equipments'] = Equipment.objects.all()
         context['selected_equipment'] = self.request.GET.get('equipment')
         context['start_date'] = self.request.GET.get('start_date')
         context['end_date'] = self.request.GET.get('end_date')
         return context
+
+    def export_to_excel(self, request):
+        # Obtém os dados filtrados
+        queryset = self.get_queryset()
+        
+        # Cria um novo workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Histórico de Manutenções"
+
+        # Define os cabeçalhos
+        headers = [
+            'Equipamento', 'Empresa', 'Data da Manutenção', 'Custo',
+            'Garantia até', 'Status', 'Descrição', 'Número da Nota',
+            'Observações'
+        ]
+        
+        # Estilo para o cabeçalho
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # Adiciona os cabeçalhos
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # Adiciona os dados
+        for row, order in enumerate(queryset, 2):
+            ws.cell(row=row, column=1, value=str(order.equipment))
+            ws.cell(row=row, column=2, value=order.service_provider)
+            ws.cell(row=row, column=3, value=order.completion_date.strftime('%d/%m/%Y') if order.completion_date else 'Não definida')
+            ws.cell(row=row, column=4, value=f"R$ {order.cost:,.2f}" if order.cost else "R$ 0,00")
+            ws.cell(row=row, column=5, value=order.warranty_expiration.strftime('%d/%m/%Y') if order.warranty_expiration else 'Sem garantia')
+            ws.cell(row=row, column=6, value=order.get_status_display())
+            ws.cell(row=row, column=7, value=order.description or '')
+            ws.cell(row=row, column=8, value=order.invoice_number or '')
+            ws.cell(row=row, column=9, value=order.notes or '')
+
+        # Ajusta a largura das colunas
+        for col in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col)].width = 15
+
+        # Cria a resposta HTTP
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="historico_manutencoes.xlsx"'
+        
+        # Salva o workbook
+        wb.save(response)
+        
+        return response
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('export') == 'excel':
+            return self.export_to_excel(request)
+        return super().get(request, *args, **kwargs)
 
 class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'maintenance/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
 
         # Contagem de manutenções por status
         context['pending_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='pendente'
         ).count()
 
         context['in_progress_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='em_andamento'
         ).count()
 
         context['completed_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='concluida'
         ).count()
 
         # Total de equipamentos
-        context['equipment_count'] = Equipment.objects.filter(
-            owner=user
-        ).count()
+        context['equipment_count'] = Equipment.objects.count()
 
         # Últimas 5 manutenções realizadas
-        context['recent_maintenance'] = MaintenanceOrder.objects.filter(
-            created_by=user
-        ).order_by('-completion_date', '-created_at')[:5]
+        context['recent_maintenance'] = MaintenanceOrder.objects.all().order_by('-completion_date', '-created_at')[:5]
 
         # Dados para o gráfico de custos
         months = []
@@ -167,7 +221,6 @@ class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
         for i in range(6):
             date = now - timedelta(days=30 * i)
             month_orders = MaintenanceOrder.objects.filter(
-                created_by=user,
                 status='concluida',
                 completion_date__year=date.year,
                 completion_date__month=date.month
@@ -187,7 +240,7 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Equipment.objects.filter(owner=self.request.user)
+        queryset = Equipment.objects.all()
         
         # Filtro por tipo
         equipment_type = self.request.GET.get('type')
@@ -219,13 +272,12 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'equipment'
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['maintenance_orders'] = MaintenanceOrder.objects.filter(
-            equipment=self.object,
-            created_by=self.request.user
+            equipment=self.object
         ).order_by('-completion_date')
         return context
 
@@ -236,7 +288,7 @@ class EquipmentUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('maintenance:equipment_list')
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -249,4 +301,4 @@ class EquipmentDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('maintenance:equipment_list')
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()

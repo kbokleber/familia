@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -6,6 +7,8 @@
     <title>{% block title %}Sistema de Gestão Familiar{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/family_icon.svg' %}">
     <style>
         body {
             min-height: 100vh;
@@ -101,7 +104,10 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             {% endif %}
-            <a class="navbar-brand" href="/">Sistema de Gestão Familiar</a>
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'img/family_icon.svg' %}" alt="Logo" width="24" height="24" class="d-inline-block align-text-top me-2">
+                Sistema de Gestão Familiar
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -114,6 +120,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:settings' %}">Configurações</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}" class="dropdown-item p-0">
@@ -193,7 +200,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if 'healthcare/members' in request.path %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
-                                <i class="bi bi-people"></i>
+                                <img src="{% static 'img/family_icon.svg' %}" alt="Ícone Família" width="16" height="16" class="me-2">
                                 Membros da Família
                             </a>
                         </li>
@@ -219,19 +226,21 @@
                 </li>
 
                 <!-- Configurações -->
+                {% if user.is_superuser %}
                 <li class="nav-item mt-3">
                     <div class="px-3 mb-2">
                         <small class="text-muted">Configurações</small>
                     </div>
                     <ul class="nav flex-column ms-2">
                         <li class="nav-item">
-                            <a class="nav-link {% if 'accounts/profile' in request.path %}active{% endif %}" href="{% url 'accounts:profile' %}">
-                                <i class="bi bi-gear"></i>
-                                Configurações
+                            <a class="nav-link {% if 'accounts/users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+                                <i class="bi bi-people-fill"></i>
+                                Gerenciar Usuários
                             </a>
                         </li>
                     </ul>
                 </li>
+                {% endif %}
             </ul>
         </div>
 

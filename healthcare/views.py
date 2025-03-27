@@ -29,7 +29,7 @@ def family_member_list(request):
     members = FamilyMember.objects.all()
     context = {
         'page_title': 'Membros da Família',
-        'members': members
+        'family_members': members
     }
     return render(request, 'healthcare/family_member_list.html', context)
 
@@ -56,7 +56,9 @@ def family_member_create(request):
     if request.method == 'POST':
         form = FamilyMemberForm(request.POST, request.FILES)
         if form.is_valid():
-            member = form.save()
+            member = form.save(commit=False)
+            member.user = request.user
+            member.save()
             messages.success(request, 'Membro da família cadastrado com sucesso!')
             return redirect('healthcare:family_member_list')
         else:
@@ -93,6 +95,16 @@ def family_member_edit(request, pk):
         'form': form
     }
     return render(request, 'healthcare/family_member_form.html', context)
+
+@login_required
+def family_member_delete(request, pk):
+    """Exclui um membro da família"""
+    member = get_object_or_404(FamilyMember, pk=pk)
+    if request.method == 'POST':
+        member.delete()
+        messages.success(request, 'Membro da família excluído com sucesso!')
+        return redirect('healthcare:family_member_list')
+    return redirect('healthcare:family_member_list')
 
 @login_required
 def appointment_list(request):
