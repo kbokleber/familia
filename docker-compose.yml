@@ -5,8 +5,10 @@ services:
     image: postgres:15
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
+    environment:
+      - POSTGRES_DB=sistema_familiar_db
+      - POSTGRES_USER=sistema_familiar_user
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024
     ports:
       - "5440:5432"
     networks:
@@ -51,9 +53,14 @@ services:
       - media_volume:/app/media
     ports:
       - "8001:8000"
-    env_file:
-      - .env
     environment:
+      - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
+      - DJANGO_DEBUG=False
+      - DJANGO_ALLOWED_HOSTS=*
+      - DJANGO_SECRET_KEY=django-insecure-7$$0@=0$$8\&6=0$$8\&6=0$$8\&6=0$$8\&6=0$$8\&6
+      - POSTGRES_DB=sistema_familiar_db
+      - POSTGRES_USER=sistema_familiar_user
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024
       - DB_HOST=db
       - DB_PORT=5432
       - PYTHONUNBUFFERED=1

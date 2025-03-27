@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2>{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Membro da Família</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.name|as_crispy_field }}
+                                {{ form.birth_date|as_crispy_field }}
+                                {{ form.gender|as_crispy_field }}
+                                {{ form.relationship|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.photo|as_crispy_field }}
+                                <div class="mt-3">
+                                    <div id="imagePreview" class="text-center" style="display: none;">
+                                        <img id="preview" src="" alt="Preview" class="img-fluid rounded" style="max-height: 200px;">
+                                        <button type="button" class="btn btn-danger btn-sm mt-2" onclick="clearImage()">Remover Imagem</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            {{ form.notes|as_crispy_field }}
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <a href="{% url 'healthcare:member_list' %}" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('id_photo');
+    const imagePreview = document.getElementById('imagePreview');
+    const preview = document.getElementById('preview');
+
+    // Se já existir uma imagem, mostrar o preview
+    if (preview.src) {
+        imagePreview.style.display = 'block';
+    }
+
+    photoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+});
+
+function clearImage() {
+    const photoInput = document.getElementById('id_photo');
+    const imagePreview = document.getElementById('imagePreview');
+    const preview = document.getElementById('preview');
+    
+    photoInput.value = '';
+    preview.src = '';
+    imagePreview.style.display = 'none';
+}
+</script>
+{% endblock %} 
