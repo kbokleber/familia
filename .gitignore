@@ -1,15 +1,9 @@
-# Python virtual environment
-.venv/
-venv/
-ENV/
-
-# Python cache files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -33,20 +27,24 @@ db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
+mcp.json
 
-# Environment variables
+# Virtual Environment
 .env
-.env.*
+.venv
+env/
+venv/
+ENV/
 
-# IDE specific files
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Docker
-.docker/
-
-# System Files
+# OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Docker
+.docker/ 

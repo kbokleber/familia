@@ -1,13 +1,16 @@
 from django.urls import path
-from .views import RegisterView, ProfileUpdateView, SettingsView
+from . import views
 
 app_name = 'accounts'
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name='register'),
-    path('profile/', ProfileUpdateView.as_view(), name='profile'),
-    path('settings/', SettingsView.as_view(), name='settings'),
-    path('settings/user/create/', SettingsView.as_view(), {'action': 'create_user'}, name='create_user'),
-    path('settings/user/<int:pk>/update/', SettingsView.as_view(), {'action': 'update_user'}, name='update_user'),
-    path('settings/user/<int:pk>/delete/', SettingsView.as_view(), {'action': 'delete_user'}, name='delete_user'),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('logout/', views.CustomLogoutView.as_view(), name='logout'),
+    path('register/', views.RegisterView.as_view(), name='register'),
+    path('settings/', views.SettingsView.as_view(), name='settings'),
+    path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    path('users/create/', views.UserCreateView.as_view(), name='user_create'),
+    path('users/<int:pk>/edit/', views.UserUpdateView.as_view(), name='user_update'),
+    path('users/<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
 ] 
