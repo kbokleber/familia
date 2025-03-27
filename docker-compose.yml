@@ -8,7 +8,7 @@ services:
     environment:
       - POSTGRES_DB=sistema_familiar_db
       - POSTGRES_USER=sistema_familiar_user
-      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024!@#
     ports:
       - "5440:5432"
     networks:
@@ -30,40 +30,17 @@ services:
           memory: 1G
 
   web:
-    image: kbokleber/sistema_familiar:latest
-    command: >
-      sh -c "
-      echo 'Starting web service...' &&
-      while ! nc -z db 5432; do
-        echo 'Waiting for database...'
-        sleep 1
-      done &&
-      echo 'Database is ready!' &&
-      echo 'Running migrations...' &&
-      python manage.py migrate &&
-      echo 'Collecting static files...' &&
-      python manage.py collectstatic --noinput &&
-      echo 'Creating superuser...' &&
-      python create_superuser.py &&
-      echo 'Starting Gunicorn...' &&
-      gunicorn maintenance_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --log-level debug
-      "
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
+      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
-      - "8001:8000"
+      - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
-      - DJANGO_DEBUG=False
-      - DJANGO_ALLOWED_HOSTS=*
-      - DJANGO_SECRET_KEY=django-insecure-7$$0@=0$$8\&6=0$$8\&6=0$$8\&6=0$$8\&6=0$$8\&6
-      - POSTGRES_DB=sistema_familiar_db
-      - POSTGRES_USER=sistema_familiar_user
-      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024
-      - DB_HOST=db
-      - DB_PORT=5432
-      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgres://sistema_familiar_user:SuaSenhaSeguraParaDB2024!@#@db:5432/sistema_familiar_db
     depends_on:
       - db
     networks:
