@@ -37,7 +37,7 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
       - DATABASE_URL=postgres://sistema_familiar_user:SuaSenhaSeguraParaDB2024!@#@db:5432/sistema_familiar_db
