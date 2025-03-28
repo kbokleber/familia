@@ -5,137 +5,226 @@
 
 {% block healthcare_content %}
 <div class="container-fluid">
-    <div class="row">
-        <!-- Membros da Família -->
-        <div class="col-md-3 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Membros da Família</h5>
-                    <a href="{% url 'healthcare:family_member_create' %}" class="btn btn-success btn-sm">
-                        <i class="bi bi-plus-circle"></i> Novo
-                    </a>
+    <!-- Cards de Resumo -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Consultas</h6>
+                            <h2 class="card-title mb-0">{{ appointments_count }}</h2>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-calendar-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Medicamentos</h6>
+                            <h2 class="card-title mb-0">{{ medications_count }}</h2>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-capsule fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Procedimentos</h6>
+                            <h2 class="card-title mb-0">{{ procedures_count }}</h2>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-clipboard-pulse fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Exames</h6>
+                            <h2 class="card-title mb-0">{{ exams_count }}</h2>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-file-earmark-text fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos e Listas -->
+    <div class="row g-4">
+        <!-- Gráfico de Registros -->
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-graph-up me-2"></i>Registros por Mês
+                        </h5>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="chartPeriod3">3M</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="chartPeriod6">6M</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary active" id="chartPeriod12">12M</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
-                    {% if family_members %}
-                    <div class="list-group list-group-flush">
-                        {% for member in family_members %}
-                        <a href="{% url 'healthcare:family_member_detail' member.pk %}" 
-                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            <div>
-                                {% if member.photo %}
-                                <img src="{{ member.photo.url }}" alt="{{ member.name }}" 
-                                     class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                {% else %}
-                                <i class="bi bi-person-circle me-2" style="font-size: 1.5rem;"></i>
-                                {% endif %}
-                                {{ member.name }}
-                            </div>
-                            <span class="text-muted small">{{ member.relationship|default:"" }}</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum membro cadastrado.</p>
-                    {% endif %}
+                    <canvas id="recordsChart" height="300"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Próximas Consultas -->
-        <div class="col-md-3 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Próximas Consultas</h5>
-                    <a href="{% url 'healthcare:appointment_create' %}" class="btn btn-success btn-sm">
-                        <i class="bi bi-plus-circle"></i> Nova
-                    </a>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-calendar-event me-2"></i>Próximas Consultas
+                        </h5>
+                        <a href="{% url 'healthcare:appointment_create' %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg"></i>
+                        </a>
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% if upcoming_appointments %}
+                <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         {% for appointment in upcoming_appointments %}
-                        <div class="list-group-item">
+                        <a href="{% url 'healthcare:appointment_edit' appointment.pk %}" class="list-group-item list-group-item-action">
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ appointment.family_member.name }}</h6>
-                                <small class="text-muted">{{ appointment.appointment_date|date:"d/m/Y H:i" }}</small>
+                                <h6 class="mb-1">{{ appointment.doctor_name }}</h6>
+                                <small class="text-muted">{{ appointment.appointment_date|date:"d/m/Y" }}</small>
                             </div>
-                            <p class="mb-1">{{ appointment.doctor_name }} - {{ appointment.specialty }}</p>
-                            <small class="text-muted">{{ appointment.location }}</small>
+                            <p class="mb-1">{{ appointment.specialty }}</p>
+                            <small class="text-muted">{{ appointment.family_member.name }}</small>
+                        </a>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            Nenhuma consulta agendada
                         </div>
                         {% endfor %}
                     </div>
-                    {% else %}
-                    <p class="text-muted">Nenhuma consulta agendada.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Procedimentos Recentes -->
-        <div class="col-md-3 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Procedimentos Recentes</h5>
-                    <a href="{% url 'healthcare:procedure_create' %}" class="btn btn-success btn-sm">
-                        <i class="bi bi-plus-circle"></i> Novo
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if recent_procedures %}
-                    <div class="list-group list-group-flush">
-                        {% for procedure in recent_procedures %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ procedure.family_member.name }}</h6>
-                                <small class="text-muted">{{ procedure.procedure_date|date:"d/m/Y" }}</small>
-                            </div>
-                            <p class="mb-1">{{ procedure.procedure_name }}</p>
-                            <small class="text-muted">{{ procedure.doctor_name }}</small>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum procedimento registrado.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Medicamentos -->
-        <div class="col-md-3 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Medicamentos</h5>
-                    <a href="{% url 'healthcare:medication_create' %}" class="btn btn-success btn-sm">
-                        <i class="bi bi-plus-circle"></i> Novo
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if medications %}
-                    <div class="list-group list-group-flush">
-                        {% for medication in medications %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ medication.family_member.name }}</h6>
-                                <small class="text-muted">
-                                    {% if medication.is_active %}
-                                    <span class="badge bg-success">Ativo</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Inativo</span>
-                                    {% endif %}
-                                </small>
-                            </div>
-                            <p class="mb-1">{{ medication.name }} - {{ medication.dosage }}</p>
-                            <small class="text-muted">{{ medication.get_frequency_display }}</small>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">Nenhum medicamento registrado.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dados do gráfico
+    const chartData = {
+        labels: {{ chart_labels|safe }},
+        datasets: [
+            {
+                label: 'Consultas',
+                data: {{ appointments_chart_data|safe }},
+                backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                borderColor: 'rgb(13, 110, 253)',
+                borderWidth: 1
+            },
+            {
+                label: 'Medicamentos',
+                data: {{ medications_chart_data|safe }},
+                backgroundColor: 'rgba(25, 135, 84, 0.5)',
+                borderColor: 'rgb(25, 135, 84)',
+                borderWidth: 1
+            },
+            {
+                label: 'Procedimentos',
+                data: {{ procedures_chart_data|safe }},
+                backgroundColor: 'rgba(13, 202, 240, 0.5)',
+                borderColor: 'rgb(13, 202, 240)',
+                borderWidth: 1
+            },
+            {
+                label: 'Exames',
+                data: {{ exams_chart_data|safe }},
+                backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                borderColor: 'rgb(255, 193, 7)',
+                borderWidth: 1
+            }
+        ]
+    };
+
+    // Configuração do gráfico
+    const config = {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    };
+
+    // Criar o gráfico
+    const ctx = document.getElementById('recordsChart').getContext('2d');
+    const recordsChart = new Chart(ctx, config);
+
+    // Função para atualizar o gráfico com dados de diferentes períodos
+    function updateChart(months) {
+        fetch(`/healthcare/api/chart-data/?months=${months}`)
+            .then(response => response.json())
+            .then(data => {
+                recordsChart.data.labels = data.labels;
+                recordsChart.data.datasets[0].data = data.appointments_data;
+                recordsChart.data.datasets[1].data = data.medications_data;
+                recordsChart.data.datasets[2].data = data.procedures_data;
+                recordsChart.data.datasets[3].data = data.exams_data;
+                recordsChart.update();
+            });
+    }
+
+    // Event listeners para os botões de período
+    document.getElementById('chartPeriod3').addEventListener('click', function() {
+        updateChart(3);
+        this.classList.add('active');
+        document.getElementById('chartPeriod6').classList.remove('active');
+        document.getElementById('chartPeriod12').classList.remove('active');
+    });
+
+    document.getElementById('chartPeriod6').addEventListener('click', function() {
+        updateChart(6);
+        this.classList.add('active');
+        document.getElementById('chartPeriod3').classList.remove('active');
+        document.getElementById('chartPeriod12').classList.remove('active');
+    });
+
+    document.getElementById('chartPeriod12').addEventListener('click', function() {
+        updateChart(12);
+        this.classList.add('active');
+        document.getElementById('chartPeriod3').classList.remove('active');
+        document.getElementById('chartPeriod6').classList.remove('active');
+    });
+});
+</script>
 {% endblock %} 

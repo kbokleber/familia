@@ -5,6 +5,8 @@ app_name = 'healthcare'
 
 urlpatterns = [
     path('', views.healthcare_dashboard, name='dashboard'),
+    path('api/procedures-chart-data/', views.procedures_chart_data, name='procedures_chart_data'),
+    path('api/chart-data/', views.chart_data, name='chart_data'),
     
     # Family Member URLs
     path('members/', views.family_member_list, name='family_member_list'),

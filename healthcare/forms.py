@@ -1,65 +1,27 @@
 from django import forms
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication
-
-class MultipleFileInput(forms.ClearableFileInput):
-    allow_multiple_selected = True
-
-class MultipleFileField(forms.FileField):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput())
-        super().__init__(*args, **kwargs)
-
-    def clean(self, data, initial=None):
-        single_file_clean = super().clean
-        if isinstance(data, (list, tuple)):
-            result = [single_file_clean(d, initial) for d in data]
-        else:
-            result = single_file_clean(data, initial)
-        return result
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument, MedicationDocument, Exam, ExamDocument
+from .widgets import MultipleFileInput
+from .fields import MultipleFileField
 
 class FamilyMemberForm(forms.ModelForm):
     class Meta:
         model = FamilyMember
-        fields = ['name', 'photo', 'birth_date', 'gender', 'relationship', 'blood_type',
-                 'allergies', 'chronic_conditions', 'emergency_contact',
-                 'emergency_phone', 'notes']
+        fields = [
+            'name', 'birth_date', 'gender', 'relationship', 'photo',
+            'blood_type', 'allergies', 'chronic_conditions', 'emergency_contact',
+            'emergency_phone', 'notes'
+        ]
         widgets = {
-            'birth_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'form-control',
-                'format': '%Y-%m-%d'
-            }),
-            'notes': forms.Textarea(attrs={'rows': 4}),
+            'birth_date': forms.DateInput(attrs={'type': 'date'}),
             'allergies': forms.Textarea(attrs={'rows': 3}),
             'chronic_conditions': forms.Textarea(attrs={'rows': 3}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
         }
-        required = ['name', 'birth_date']
 
 class MedicalAppointmentForm(forms.ModelForm):
-    appointment_date = forms.DateTimeField(
-        label='Data da Consulta',
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control',
-        }),
-        required=True,
-        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
-    )
-    
-    next_appointment = forms.DateTimeField(
-        label='Data da Próxima Consulta',
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control',
-        }),
-        required=False,
-        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
-    )
-
     documents = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
-            'class': 'form-control',
             'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
         }),
         label='Documentos'
@@ -67,50 +29,27 @@ class MedicalAppointmentForm(forms.ModelForm):
 
     class Meta:
         model = MedicalAppointment
-        fields = ['family_member', 'doctor_name', 'specialty', 'appointment_date',
-                 'location', 'reason', 'diagnosis', 'prescription',
-                 'next_appointment', 'notes']
+        fields = [
+            'family_member', 'doctor_name', 'specialty', 'appointment_date',
+            'location', 'reason', 'diagnosis', 'prescription', 'next_appointment', 'notes'
+        ]
         widgets = {
+            'appointment_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'next_appointment': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'reason': forms.Textarea(attrs={'rows': 3}),
             'diagnosis': forms.Textarea(attrs={'rows': 3}),
             'prescription': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
+        input_formats = {
+            'appointment_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+            'next_appointment': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+        }
 
 class MedicalProcedureForm(forms.ModelForm):
-    procedure_date = forms.DateTimeField(
-        label='Data do Procedimento',
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control',
-        }),
-        required=True,
-        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
-    )
-    
-    next_procedure_date = forms.DateTimeField(
-        label='Data do Próximo Procedimento',
-        widget=forms.DateTimeInput(attrs={
-            'type': 'datetime-local',
-            'class': 'form-control',
-        }),
-        required=False,
-        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
-    )
-
-    location = forms.CharField(
-        label='Local',
-        max_length=200,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-        })
-    )
-
     documents = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
-            'class': 'form-control',
             'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
         }),
         label='Documentos'
@@ -118,20 +57,26 @@ class MedicalProcedureForm(forms.ModelForm):
 
     class Meta:
         model = MedicalProcedure
-        fields = ['family_member', 'procedure_name', 'procedure_date',
-                 'doctor_name', 'location', 'description', 'results',
-                 'follow_up_notes', 'next_procedure_date', 'documents']
+        fields = [
+            'family_member', 'procedure_name', 'doctor_name', 'procedure_date',
+            'next_procedure_date', 'location', 'description', 'results', 'follow_up_notes'
+        ]
         widgets = {
+            'procedure_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'next_procedure_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'description': forms.Textarea(attrs={'rows': 3}),
             'results': forms.Textarea(attrs={'rows': 3}),
             'follow_up_notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'procedure_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+            'next_procedure_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
         }
 
 class MedicationForm(forms.ModelForm):
     documents = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
-            'class': 'form-control',
             'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
         }),
         label='Documentos'
@@ -140,17 +85,40 @@ class MedicationForm(forms.ModelForm):
     class Meta:
         model = Medication
         fields = [
-            'family_member', 'name', 'dosage', 'frequency', 'start_date', 'end_date',
-            'prescribed_by', 'prescription_number', 'instructions', 'side_effects', 'notes'
+            'family_member', 'name', 'dosage', 'frequency', 'start_date',
+            'end_date', 'notes'
         ]
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'end_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
-            'instructions': forms.Textarea(attrs={'rows': 3}),
-            'side_effects': forms.Textarea(attrs={'rows': 3}),
+            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
         input_formats = {
-            'start_date': ['%Y-%m-%d', '%d/%m/%Y'],
-            'end_date': ['%Y-%m-%d', '%d/%m/%Y'],
+            'start_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+            'end_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+        }
+
+class ExamForm(forms.ModelForm):
+    documents = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={
+            'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+        }),
+        label='Documentos'
+    )
+
+    class Meta:
+        model = Exam
+        fields = [
+            'family_member', 'exam_name', 'doctor_name', 'exam_date',
+            'next_exam_date', 'location', 'notes'
+        ]
+        widgets = {
+            'exam_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'next_exam_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'exam_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
+            'next_exam_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
         } 

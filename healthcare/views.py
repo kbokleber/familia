@@ -2,27 +2,128 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument, MedicationDocument
-from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument, MedicationDocument, Exam
+from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm, ExamForm
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
+from datetime import datetime, timedelta
 
 @login_required
 def healthcare_dashboard(request):
     """Dashboard principal do sistema de saúde"""
-    family_members = FamilyMember.objects.all()
+    # Buscar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+
+    # Contadores
+    appointments_count = MedicalAppointment.objects.filter(family_member__user=request.user).count()
+    procedures_count = MedicalProcedure.objects.filter(family_member__user=request.user).count()
+    medications_count = Medication.objects.filter(family_member__user=request.user).count()
+    exams_count = Exam.objects.filter(user=request.user).count()
+
+    # Próximas consultas
     upcoming_appointments = MedicalAppointment.objects.filter(
+        family_member__user=request.user,
         appointment_date__gte=timezone.now()
     ).order_by('appointment_date')[:5]
-    recent_procedures = MedicalProcedure.objects.all().order_by('-procedure_date')[:5]
-    medications = Medication.objects.all().order_by('-created_at')[:5]
+
+    # Dados do gráfico (últimos 12 meses)
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=365)
     
+    # Dados de procedimentos
+    procedures_data = MedicalProcedure.objects.filter(
+        family_member__user=request.user,
+        procedure_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('procedure_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de consultas
+    appointments_data = MedicalAppointment.objects.filter(
+        family_member__user=request.user,
+        appointment_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('appointment_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de medicamentos
+    medications_data = Medication.objects.filter(
+        family_member__user=request.user,
+        start_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('start_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de exames
+    exams_data = Exam.objects.filter(
+        user=request.user,
+        exam_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('exam_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Preparar dados para o gráfico
+    chart_labels = []
+    procedures_chart_data = []
+    appointments_chart_data = []
+    medications_chart_data = []
+    exams_chart_data = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_label = current_date.strftime('%b/%Y')
+        chart_labels.append(month_label)
+        
+        # Encontrar os valores para este mês
+        month_procedures = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        procedures_chart_data.append(month_procedures)
+
+        month_appointments = next(
+            (item['count'] for item in appointments_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        appointments_chart_data.append(month_appointments)
+
+        month_medications = next(
+            (item['count'] for item in medications_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        medications_chart_data.append(month_medications)
+
+        month_exams = next(
+            (item['count'] for item in exams_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        exams_chart_data.append(month_exams)
+        
+        current_date += timedelta(days=32)  # Avançar para o próximo mês
+
     context = {
         'page_title': 'Dashboard',
         'family_members': family_members,
         'upcoming_appointments': upcoming_appointments,
-        'recent_procedures': recent_procedures,
-        'medications': medications,
+        'appointments_count': appointments_count,
+        'procedures_count': procedures_count,
+        'medications_count': medications_count,
+        'exams_count': exams_count,
+        'chart_labels': chart_labels,
+        'procedures_chart_data': procedures_chart_data,
+        'appointments_chart_data': appointments_chart_data,
+        'medications_chart_data': medications_chart_data,
+        'exams_chart_data': exams_chart_data,
     }
     return render(request, 'healthcare/dashboard.html', context)
 
@@ -372,3 +473,143 @@ def medication_delete(request, pk):
         return redirect('healthcare:medication_list')
     
     return redirect('healthcare:medication_list')
+
+@login_required
+def procedures_chart_data(request):
+    months = int(request.GET.get('months', 12))
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=months * 30)
+    
+    # Buscar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+    
+    procedures_data = MedicalProcedure.objects.filter(
+        family_member__in=family_members,
+        procedure_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('procedure_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Preparar dados para o gráfico
+    labels = []
+    data = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_label = current_date.strftime('%b/%Y')
+        labels.append(month_label)
+        
+        # Encontrar o valor para este mês
+        month_data = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        data.append(month_data)
+        
+        current_date += timedelta(days=32)  # Avançar para o próximo mês
+
+    return JsonResponse({
+        'labels': labels,
+        'data': data
+    })
+
+def chart_data(request):
+    """View para fornecer dados do gráfico via API"""
+    months = int(request.GET.get('months', 12))
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=30 * months)
+    
+    # Filtrar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+    
+    # Consultas
+    appointments_data = (
+        MedicalAppointment.objects
+        .filter(family_member__in=family_members, appointment_date__gte=start_date)
+        .annotate(month=TruncMonth('appointment_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Medicamentos
+    medications_data = (
+        Medication.objects
+        .filter(family_member__in=family_members, start_date__gte=start_date)
+        .annotate(month=TruncMonth('start_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Procedimentos
+    procedures_data = (
+        MedicalProcedure.objects
+        .filter(family_member__in=family_members, procedure_date__gte=start_date)
+        .annotate(month=TruncMonth('procedure_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Exames
+    exams_data = (
+        Exam.objects
+        .filter(family_member__in=family_members, exam_date__gte=start_date)
+        .annotate(month=TruncMonth('exam_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Preparar dados para o gráfico
+    months_list = []
+    appointments_counts = []
+    medications_counts = []
+    procedures_counts = []
+    exams_counts = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_str = current_date.strftime('%b/%Y')
+        months_list.append(month_str)
+        
+        # Contagem de consultas
+        appointment_count = next(
+            (item['count'] for item in appointments_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        appointments_counts.append(appointment_count)
+        
+        # Contagem de medicamentos
+        medication_count = next(
+            (item['count'] for item in medications_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        medications_counts.append(medication_count)
+        
+        # Contagem de procedimentos
+        procedure_count = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        procedures_counts.append(procedure_count)
+        
+        # Contagem de exames
+        exam_count = next(
+            (item['count'] for item in exams_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        exams_counts.append(exam_count)
+        
+        current_date += timedelta(days=30)
+    
+    return JsonResponse({
+        'labels': months_list,
+        'appointments_data': appointments_counts,
+        'medications_data': medications_counts,
+        'procedures_data': procedures_counts,
+        'exams_data': exams_counts
+    })

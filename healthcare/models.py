@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from PIL import Image
@@ -57,11 +57,15 @@ class MedicalAppointment(models.Model):
         ordering = ['-appointment_date']
 
     def __str__(self):
-        return f"{self.family_member.name} - {self.appointment_date.strftime('%d/%m/%Y %H:%M')}"
+        return f"{self.family_member.name} - {self.doctor_name} - {self.appointment_date.strftime('%d/%m/%Y')}"
 
 class AppointmentDocument(models.Model):
     appointment = models.ForeignKey(MedicalAppointment, on_delete=models.CASCADE, related_name='documents', verbose_name='Consulta')
-    file = models.FileField('Arquivo', upload_to='appointment_documents/')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='appointment_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
     name = models.CharField('Nome do Arquivo', max_length=255)
     uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
 
@@ -92,11 +96,15 @@ class MedicalProcedure(models.Model):
         ordering = ['-procedure_date']
 
     def __str__(self):
-        return f"{self.family_member.name} - {self.procedure_name} ({self.procedure_date.strftime('%d/%m/%Y')})"
+        return f"{self.family_member.name} - {self.procedure_name} - {self.procedure_date.strftime('%d/%m/%Y')}"
 
 class ProcedureDocument(models.Model):
     procedure = models.ForeignKey(MedicalProcedure, on_delete=models.CASCADE, related_name='documents', verbose_name='Procedimento')
-    file = models.FileField('Arquivo', upload_to='procedures/documents/')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='procedure_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
     name = models.CharField('Nome do Arquivo', max_length=255)
     uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
 
@@ -158,7 +166,11 @@ class Medication(models.Model):
 
 class MedicationDocument(models.Model):
     medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')
-    file = models.FileField(upload_to='medication_documents/')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='medication_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
     name = models.CharField(max_length=255)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -178,3 +190,31 @@ class MedicationDocument(models.Model):
     class Meta:
         verbose_name = 'Documento do Medicamento'
         verbose_name_plural = 'Documentos dos Medicamentos'
+
+class Exam(models.Model):
+    family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE)
+    exam_name = models.CharField(max_length=200)
+    doctor_name = models.CharField(max_length=100)
+    exam_date = models.DateTimeField()
+    next_exam_date = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=200)
+    notes = models.TextField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.family_member.name} - {self.exam_name} - {self.exam_date.strftime('%d/%m/%Y')}"
+
+class ExamDocument(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='documents')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='exam_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.exam}"
