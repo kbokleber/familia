@@ -64,7 +64,7 @@ class MedicalProcedure(models.Model):
     procedure_name = models.CharField('Nome do Procedimento', max_length=200)
     procedure_date = models.DateTimeField('Data do Procedimento')
     doctor_name = models.CharField('Nome do Médico', max_length=100)
-    location = models.CharField('Local', max_length=200)
+    location = models.CharField('Local', max_length=200, blank=True)
     description = models.TextField('Descrição')
     results = models.TextField('Resultados', blank=True)
     follow_up_notes = models.TextField('Observações de Acompanhamento', blank=True)
@@ -79,6 +79,20 @@ class MedicalProcedure(models.Model):
 
     def __str__(self):
         return f"{self.family_member.name} - {self.procedure_name} ({self.procedure_date.strftime('%d/%m/%Y')})"
+
+class ProcedureDocument(models.Model):
+    procedure = models.ForeignKey(MedicalProcedure, on_delete=models.CASCADE, related_name='documents', verbose_name='Procedimento')
+    file = models.FileField('Arquivo', upload_to='procedures/documents/')
+    name = models.CharField('Nome do Arquivo', max_length=255)
+    uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento do Procedimento'
+        verbose_name_plural = 'Documentos dos Procedimentos'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.procedure.procedure_name}"
 
 class Medication(models.Model):
     FREQUENCY_CHOICES = [

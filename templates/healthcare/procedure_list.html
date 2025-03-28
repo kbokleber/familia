@@ -35,10 +35,44 @@
                         <td>{{ procedure.location }}</td>
                         <td>{{ procedure.description }}</td>
                         <td>
-                            <a href="{% url 'healthcare:procedure_edit' procedure.pk %}" 
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
+                            <div class="btn-group">
+                                <a href="{% url 'healthcare:procedure_edit' procedure.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ procedure.pk }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal de Confirmação -->
+                            <div class="modal fade" id="deleteModal{{ procedure.pk }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirmar Exclusão</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Tem certeza que deseja excluir o procedimento <strong>{{ procedure.procedure_name }}</strong> 
+                                               do membro <strong>{{ procedure.family_member.name }}</strong>?</p>
+                                            <p class="text-danger"><small>Esta ação não poderá ser desfeita.</small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <form action="{% url 'healthcare:procedure_delete' procedure.pk %}" method="post" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="bi bi-trash"></i> Excluir
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

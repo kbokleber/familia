@@ -22,6 +22,7 @@ urlpatterns = [
     path('procedures/', views.procedure_list, name='procedure_list'),
     path('procedures/create/', views.procedure_create, name='procedure_create'),
     path('procedures/<int:pk>/edit/', views.procedure_edit, name='procedure_edit'),
+    path('procedures/<int:pk>/delete/', views.procedure_delete, name='procedure_delete'),
     
     # Medication URLs
     path('medications/', views.medication_list, name='medication_list'),

@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('procedure_name', models.CharField(max_length=200, verbose_name='Nome do Procedimento')),
                 ('procedure_date', models.DateTimeField(verbose_name='Data do Procedimento')),
                 ('doctor_name', models.CharField(max_length=100, verbose_name='Nome do Médico')),
-                ('location', models.CharField(max_length=200, verbose_name='Local')),
+                ('location', models.CharField(blank=True, max_length=200, verbose_name='Local')),
                 ('description', models.TextField(verbose_name='Descrição')),
                 ('results', models.TextField(blank=True, verbose_name='Resultados')),
                 ('follow_up_notes', models.TextField(blank=True, verbose_name='Observações de Acompanhamento')),

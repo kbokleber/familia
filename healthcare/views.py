@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument
 from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm
 from django.utils import timezone
 from django.db.models import Q
@@ -173,9 +173,19 @@ def procedure_list(request):
 def procedure_create(request):
     """Cria um novo procedimento médico"""
     if request.method == 'POST':
-        form = MedicalProcedureForm(request.POST)
+        form = MedicalProcedureForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            procedure = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                ProcedureDocument.objects.create(
+                    procedure=procedure,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Procedimento médico registrado com sucesso!')
             return redirect('healthcare:procedure_list')
     else:
@@ -194,9 +204,19 @@ def procedure_edit(request, pk):
     """Edita um procedimento médico existente"""
     procedure = get_object_or_404(MedicalProcedure, pk=pk)
     if request.method == 'POST':
-        form = MedicalProcedureForm(request.POST, instance=procedure)
+        form = MedicalProcedureForm(request.POST, request.FILES, instance=procedure)
         if form.is_valid():
-            form.save()
+            procedure = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                ProcedureDocument.objects.create(
+                    procedure=procedure,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Procedimento médico atualizado com sucesso!')
             return redirect('healthcare:procedure_list')
     else:
@@ -211,6 +231,18 @@ def procedure_edit(request, pk):
         'form': form
     }
     return render(request, 'healthcare/procedure_form.html', context)
+
+@login_required
+def procedure_delete(request, pk):
+    """Exclui um procedimento médico"""
+    procedure = get_object_or_404(MedicalProcedure, pk=pk)
+    
+    if request.method == 'POST':
+        procedure.delete()
+        messages.success(request, 'Procedimento médico excluído com sucesso!')
+        return redirect('healthcare:procedure_list')
+    
+    return redirect('healthcare:procedure_list')
 
 @login_required
 def medication_list(request):
