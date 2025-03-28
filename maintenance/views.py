@@ -1,7 +1,7 @@
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from .models import MaintenanceOrder, Equipment
+from .models import MaintenanceOrder, Equipment, EquipmentAttachment
 from django.views.generic import DetailView, ListView, TemplateView
 from django.db.models import Q
 from datetime import datetime
@@ -9,9 +9,9 @@ from django.utils import timezone
 from datetime import timedelta
 import json
 from django.http import HttpResponse
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils import get_column_letter
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .forms import EquipmentForm
 
 class CreateOrderView(LoginRequiredMixin, CreateView):
     model = MaintenanceOrder
@@ -37,13 +37,25 @@ class CreateOrderView(LoginRequiredMixin, CreateView):
 
 class CreateEquipmentView(LoginRequiredMixin, CreateView):
     model = Equipment
+    form_class = EquipmentForm
     template_name = 'maintenance/equipment_form.html'
-    fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
     success_url = reverse_lazy('dashboard:home')
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        
+        # Processa os arquivos anexados
+        files = self.request.FILES.getlist('attachments')
+        
+        for file in files:
+            EquipmentAttachment.objects.create(
+                equipment=form.instance,
+                file=file,
+                uploaded_by=self.request.user
+            )
+        
+        return response
 
 class DetailOrderView(LoginRequiredMixin, DetailView):
     model = MaintenanceOrder
@@ -131,62 +143,7 @@ class MaintenanceOrderListView(LoginRequiredMixin, ListView):
         context['end_date'] = self.request.GET.get('end_date')
         return context
 
-    def export_to_excel(self, request):
-        # Obtém os dados filtrados
-        queryset = self.get_queryset()
-        
-        # Cria um novo workbook
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Histórico de Manutenções"
-
-        # Define os cabeçalhos
-        headers = [
-            'Equipamento', 'Empresa', 'Data da Manutenção', 'Custo',
-            'Garantia até', 'Status', 'Descrição', 'Número da Nota',
-            'Observações'
-        ]
-        
-        # Estilo para o cabeçalho
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-        header_alignment = Alignment(horizontal="center", vertical="center")
-
-        # Adiciona os cabeçalhos
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-
-        # Adiciona os dados
-        for row, order in enumerate(queryset, 2):
-            ws.cell(row=row, column=1, value=str(order.equipment))
-            ws.cell(row=row, column=2, value=order.service_provider)
-            ws.cell(row=row, column=3, value=order.completion_date.strftime('%d/%m/%Y') if order.completion_date else 'Não definida')
-            ws.cell(row=row, column=4, value=f"R$ {order.cost:,.2f}" if order.cost else "R$ 0,00")
-            ws.cell(row=row, column=5, value=order.warranty_expiration.strftime('%d/%m/%Y') if order.warranty_expiration else 'Sem garantia')
-            ws.cell(row=row, column=6, value=order.get_status_display())
-            ws.cell(row=row, column=7, value=order.description or '')
-            ws.cell(row=row, column=8, value=order.invoice_number or '')
-            ws.cell(row=row, column=9, value=order.notes or '')
-
-        # Ajusta a largura das colunas
-        for col in range(1, len(headers) + 1):
-            ws.column_dimensions[get_column_letter(col)].width = 15
-
-        # Cria a resposta HTTP
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="historico_manutencoes.xlsx"'
-        
-        # Salva o workbook
-        wb.save(response)
-        
-        return response
-
     def get(self, request, *args, **kwargs):
-        if request.GET.get('export') == 'excel':
-            return self.export_to_excel(request)
         return super().get(request, *args, **kwargs)
 
 class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
@@ -283,8 +240,8 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
 
 class EquipmentUpdateView(LoginRequiredMixin, UpdateView):
     model = Equipment
+    form_class = EquipmentForm
     template_name = 'maintenance/equipment_form.html'
-    fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
     success_url = reverse_lazy('maintenance:equipment_list')
 
     def get_queryset(self):
@@ -293,7 +250,23 @@ class EquipmentUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_update'] = True
+        context['attachments'] = self.object.attachments.all()
         return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        
+        # Processa os arquivos anexados
+        files = self.request.FILES.getlist('attachments')
+        
+        for file in files:
+            EquipmentAttachment.objects.create(
+                equipment=form.instance,
+                file=file,
+                uploaded_by=self.request.user
+            )
+        
+        return response
 
 class EquipmentDeleteView(LoginRequiredMixin, DeleteView):
     model = Equipment
