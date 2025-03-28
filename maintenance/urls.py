@@ -3,7 +3,7 @@ from .views import (
     CreateOrderView, CreateEquipmentView, DetailOrderView,
     DeleteOrderView, UpdateOrderView, MaintenanceOrderListView,
     MaintenanceDashboardView, EquipmentListView, EquipmentDetailView,
-    EquipmentUpdateView, EquipmentDeleteView
+    EquipmentUpdateView, EquipmentDeleteView, DeleteMaintenanceImageView
 )
 
 app_name = 'maintenance'

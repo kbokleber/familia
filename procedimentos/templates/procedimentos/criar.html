@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    {{ form.as_p }}
+    
+    <h3>Documentos</h3>
+    {{ formset.management_form }}
+    
+    <div id="documentos-container">
+        {% for form in formset %}
+        <div class="documento-form">
+            {{ form.as_p }}
+        </div>
+        {% endfor %}
+    </div>
+    
+    <button type="button" id="adicionar-documento">Adicionar mais documentos</button>
+    <button type="submit">Salvar Procedimento</button>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('adicionar-documento').addEventListener('click', function() {
+    const container = document.getElementById('documentos-container');
+    const formCount = document.getElementById('id_documentos-TOTAL_FORMS');
+    const formNum = parseInt(formCount.value);
+    
+    // Clone o primeiro formulário
+    const emptyForm = document.querySelector('.documento-form').cloneNode(true);
+    
+    // Atualiza os IDs e names dos campos
+    emptyForm.innerHTML = emptyForm.innerHTML.replace(/-0-/g, `-${formNum}-`);
+    
+    // Limpa os valores dos campos
+    emptyForm.querySelectorAll('input').forEach(input => input.value = '');
+    
+    container.appendChild(emptyForm);
+    formCount.value = formNum + 1;
+});
+</script>
+{% endblock %} 

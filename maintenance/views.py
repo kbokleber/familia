@@ -1,8 +1,12 @@
-from django.views.generic.edit import CreateView, DeleteView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from .models import MaintenanceOrder, Equipment, EquipmentAttachment
-from django.views.generic import DetailView, ListView, TemplateView
+from django.contrib import messages
+from .forms import EquipmentForm, MaintenanceOrderForm
+from .widgets import MultipleFileInput
+from .fields import MultipleFileField
+from .models import Equipment, MaintenanceOrder, MaintenanceImage
+from django.views.generic import TemplateView
 from django.db.models import Q
 from datetime import datetime
 from django.utils import timezone
@@ -10,30 +14,24 @@ from datetime import timedelta
 import json
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import EquipmentForm
 
 class CreateOrderView(LoginRequiredMixin, CreateView):
     model = MaintenanceOrder
+    form_class = MaintenanceOrderForm
     template_name = 'maintenance/order_form.html'
-    fields = [
-        'equipment',
-        'status',
-        'service_provider',
-        'completion_date',
-        'cost',
-        'description',
-        'warranty_expiration',
-        'warranty_terms',
-        'invoice_number',
-        'invoice_file',
-        'notes'
-    ]
-    success_url = reverse_lazy('dashboard:home')
+    success_url = reverse_lazy('maintenance:order_list')
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Processa os anexos
+        for file in self.request.FILES.getlist('attachments'):
+            MaintenanceImage.objects.create(
+                maintenance_order=self.object,
+                image=file,
+                description=file.name
+            )
+        return response
 
 class CreateEquipmentView(LoginRequiredMixin, CreateView):
     model = Equipment
@@ -75,31 +73,36 @@ class DeleteOrderView(LoginRequiredMixin, DeleteView):
 
 class UpdateOrderView(LoginRequiredMixin, UpdateView):
     model = MaintenanceOrder
+    form_class = MaintenanceOrderForm
     template_name = 'maintenance/order_form.html'
-    fields = [
-        'equipment',
-        'status',
-        'service_provider',
-        'completion_date',
-        'cost',
-        'description',
-        'warranty_expiration',
-        'warranty_terms',
-        'invoice_number',
-        'invoice_file',
-        'notes'
-    ]
-
-    def get_success_url(self):
-        return reverse_lazy('maintenance:order_detail', kwargs={'pk': self.object.pk})
-
-    def get_queryset(self):
-        return MaintenanceOrder.objects.all()
+    success_url = reverse_lazy('maintenance:order_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_update'] = True
+        context['attachments'] = self.object.images.all()
         return context
+
+    def get_queryset(self):
+        return MaintenanceOrder.objects.all()
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Processa os novos anexos
+        for file in self.request.FILES.getlist('attachments'):
+            MaintenanceImage.objects.create(
+                maintenance_order=self.object,
+                image=file,
+                description=file.name
+            )
+        return response
+
+class DeleteMaintenanceImageView(LoginRequiredMixin, DeleteView):
+    model = MaintenanceImage
+    success_url = reverse_lazy('maintenance:order_list')
+
+    def get_success_url(self):
+        return reverse_lazy('maintenance:order_update', kwargs={'pk': self.object.maintenance_order.pk})
 
 class MaintenanceOrderListView(LoginRequiredMixin, ListView):
     model = MaintenanceOrder

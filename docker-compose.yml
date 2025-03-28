@@ -35,7 +35,7 @@ services:
       args:
         - VERSION=dev1.0.1
     image: kbokleber/sistema_familiar:dev1.0.1
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver --settings=maintenance_project.settings_dev
     volumes:
       - .:/app
       - static_volume:/app/staticfiles

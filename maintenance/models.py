@@ -15,7 +15,7 @@ class Equipment(models.Model):
     )
 
     name = models.CharField(max_length=100, verbose_name='Nome')
-    type = models.CharField(max_length=50, choices=TYPES, null=True, blank=True, verbose_name='Tipo')
+    type = models.CharField(max_length=50, choices=TYPES, default='outro', verbose_name='Tipo')
     brand = models.CharField(max_length=100, null=True, blank=True, verbose_name='Marca')
     model = models.CharField(max_length=100, null=True, blank=True, verbose_name='Modelo')
     serial_number = models.CharField(max_length=100, null=True, blank=True, verbose_name='Número de Série')
@@ -107,15 +107,31 @@ class MaintenanceOrder(models.Model):
         return reverse('maintenance:order_detail', kwargs={'pk': self.pk})
 
 class MaintenanceImage(models.Model):
-    order = models.ForeignKey(MaintenanceOrder, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField('Imagem', upload_to='maintenance_images/')
-    description = models.CharField('Descrição', max_length=200, blank=True)
-    uploaded_at = models.DateTimeField('Data de Upload', auto_now_add=True)
+    maintenance_order = models.ForeignKey(
+        MaintenanceOrder,
+        on_delete=models.CASCADE,
+        related_name='images',
+        verbose_name='Ordem de Manutenção'
+    )
+    image = models.ImageField(
+        upload_to='maintenance_images/',
+        verbose_name='Imagem'
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='Descrição'
+    )
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data de Upload'
+    )
+
+    def __str__(self):
+        return f"Imagem de {self.maintenance_order.equipment.name} - {self.uploaded_at.strftime('%d/%m/%Y %H:%M')}"
 
     class Meta:
         verbose_name = 'Imagem da Manutenção'
         verbose_name_plural = 'Imagens da Manutenção'
-        ordering = ['-uploaded_at']
-
-    def __str__(self):
-        return f'Imagem de {self.order}' 
+        ordering = ['-uploaded_at'] 
