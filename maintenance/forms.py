@@ -1,21 +1,7 @@
 from django import forms
-from .models import Equipment
-
-class MultipleFileInput(forms.ClearableFileInput):
-    allow_multiple_selected = True
-
-class MultipleFileField(forms.FileField):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput())
-        super().__init__(*args, **kwargs)
-
-    def clean(self, data, initial=None):
-        single_file_clean = super().clean
-        if isinstance(data, (list, tuple)):
-            result = [single_file_clean(d, initial) for d in data]
-        else:
-            result = single_file_clean(data, initial)
-        return result
+from .models import Equipment, MaintenanceOrder, MaintenanceImage
+from .widgets import MultipleFileInput
+from .fields import MultipleFileField
 
 class EquipmentForm(forms.ModelForm):
     attachments = MultipleFileField(
@@ -35,4 +21,32 @@ class EquipmentForm(forms.ModelForm):
             'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
             'purchase_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+class MaintenanceOrderForm(forms.ModelForm):
+    attachments = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={'class': 'form-control'}),
+        label='Anexos'
+    )
+
+    class Meta:
+        model = MaintenanceOrder
+        fields = [
+            'equipment', 'status', 'service_provider', 'completion_date',
+            'cost', 'description', 'warranty_expiration', 'warranty_terms',
+            'invoice_number', 'invoice_file', 'notes'
+        ]
+        widgets = {
+            'equipment': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'service_provider': forms.TextInput(attrs={'class': 'form-control'}),
+            'completion_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'warranty_expiration': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'warranty_terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'invoice_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'invoice_file': forms.FileInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         } 

@@ -81,7 +81,11 @@
                             <div class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
                                     <i class="bi {% if attachment.is_image %}bi-image{% elif attachment.is_document %}bi-file-earmark-text{% else %}bi-file-earmark{% endif %} me-2"></i>
+<<<<<<< HEAD
                                     {{ attachment.description|default:attachment.file.name }}
+=======
+                                    {% if attachment.description %}{{ attachment.description }}{% else %}{{ attachment.file.name }}{% endif %}
+>>>>>>> c782461fc621858f8bb48389e453a18872758c60
                                     <small class="text-muted d-block">
                                         {{ attachment.uploaded_at|date:"d/m/Y H:i" }} por {{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }}
                                     </small>

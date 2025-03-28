@@ -225,6 +225,59 @@
                             {% endif %}
                         </div>
 
+                        <!-- Anexos -->
+                        <div class="mb-4">
+                            <label for="{{ form.attachments.id_for_label }}" class="form-label">
+                                {{ form.attachments.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-paperclip"></i>
+                                </span>
+                                {{ form.attachments }}
+                            </div>
+                            {% if form.attachments.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.attachments.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Você pode selecionar múltiplos arquivos. Formatos aceitos: imagens e documentos.
+                            </small>
+                        </div>
+
+                        {% if is_update and attachments %}
+                        <!-- Lista de Anexos Existentes -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Anexos Existentes</h5>
+                            <div class="list-group">
+                                {% for attachment in attachments %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-image me-2"></i>
+                                        {% if attachment.description %}
+                                            {{ attachment.description }}
+                                        {% else %}
+                                            {{ attachment.image.name|cut:"maintenance_images/" }}
+                                        {% endif %}
+                                        <small class="text-muted d-block">
+                                            {{ attachment.uploaded_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <a href="{{ attachment.image.url }}" class="btn btn-sm btn-outline-primary me-2" target="_blank">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'maintenance:delete_maintenance_image' attachment.pk %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <!-- Botões -->
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{% if is_update %}{% url 'maintenance:order_detail' object.pk %}{% else %}{% url 'dashboard:home' %}{% endif %}" class="btn btn-secondary">
