@@ -1,4 +1,4 @@
-{% extends 'healthcare/base_healthcare.html' %}
+{% extends 'form_base.html' %}
 {% load crispy_forms_tags %}
 
 {% block page_title %}
@@ -9,6 +9,23 @@
 <a href="{% url 'healthcare:medication_list' %}" class="btn btn-secondary">
     <i class="bi bi-arrow-left"></i> Voltar
 </a>
+{% endblock %}
+
+{% block form_left_column %}
+{{ form.family_member|as_crispy_field }}
+{{ form.name|as_crispy_field }}
+{{ form.dosage|as_crispy_field }}
+{{ form.frequency|as_crispy_field }}
+{{ form.start_date|as_crispy_field }}
+{{ form.end_date|as_crispy_field }}
+{% endblock %}
+
+{% block form_right_column %}
+{{ form.prescribed_by|as_crispy_field }}
+{{ form.prescription_number|as_crispy_field }}
+{{ form.instructions|as_crispy_field }}
+{{ form.side_effects|as_crispy_field }}
+{{ form.notes|as_crispy_field }}
 {% endblock %}
 
 {% block healthcare_content %}

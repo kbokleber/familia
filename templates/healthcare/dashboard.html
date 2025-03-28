@@ -7,11 +7,11 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Membros da Família -->
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Membros da Família</h5>
-                    <a href="{% url 'healthcare:family_member_create' %}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'healthcare:family_member_create' %}" class="btn btn-success btn-sm">
                         <i class="bi bi-plus-circle"></i> Novo
                     </a>
                 </div>
@@ -42,11 +42,11 @@
         </div>
 
         <!-- Próximas Consultas -->
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Próximas Consultas</h5>
-                    <a href="{% url 'healthcare:appointment_create' %}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'healthcare:appointment_create' %}" class="btn btn-success btn-sm">
                         <i class="bi bi-plus-circle"></i> Nova
                     </a>
                 </div>
@@ -72,11 +72,11 @@
         </div>
 
         <!-- Procedimentos Recentes -->
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Procedimentos Recentes</h5>
-                    <a href="{% url 'healthcare:procedure_create' %}" class="btn btn-primary btn-sm">
+                    <a href="{% url 'healthcare:procedure_create' %}" class="btn btn-success btn-sm">
                         <i class="bi bi-plus-circle"></i> Novo
                     </a>
                 </div>
@@ -96,6 +96,42 @@
                     </div>
                     {% else %}
                     <p class="text-muted">Nenhum procedimento registrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Medicamentos -->
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Medicamentos</h5>
+                    <a href="{% url 'healthcare:medication_create' %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-plus-circle"></i> Novo
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if medications %}
+                    <div class="list-group list-group-flush">
+                        {% for medication in medications %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ medication.family_member.name }}</h6>
+                                <small class="text-muted">
+                                    {% if medication.is_active %}
+                                    <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ medication.name }} - {{ medication.dosage }}</p>
+                            <small class="text-muted">{{ medication.get_frequency_display }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhum medicamento registrado.</p>
                     {% endif %}
                 </div>
             </div>
