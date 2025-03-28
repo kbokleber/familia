@@ -5,6 +5,8 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
+ARG VERSION
+ENV VERSION=$VERSION
 
 # Crie e defina o diretório de trabalho
 WORKDIR /app

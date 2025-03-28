@@ -114,4 +114,7 @@ LOGOUT_REDIRECT_URL = '/login/'
 LOGIN_URL = '/login/'
 
 # Django Notifications
-DJANGO_NOTIFICATIONS_CONFIG = {'USE_JSONFIELD': True} 
+DJANGO_NOTIFICATIONS_CONFIG = {'USE_JSONFIELD': True}
+
+# Version
+VERSION = os.environ.get('VERSION', 'dev1.0.1') 

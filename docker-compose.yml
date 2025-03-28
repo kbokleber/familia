@@ -30,7 +30,11 @@ services:
           memory: 1G
 
   web:
-    build: .
+    build: 
+      context: .
+      args:
+        - VERSION=dev1.0.1
+    image: kbokleber/sistema_familiar:dev1.0.1
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
@@ -41,6 +45,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
       - DATABASE_URL=postgres://sistema_familiar_user:SuaSenhaSeguraParaDB2024!@#@db:5432/sistema_familiar_db
+      - VERSION=dev1.0.1
     depends_on:
       - db
     networks:
