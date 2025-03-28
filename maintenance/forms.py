@@ -6,7 +6,9 @@ from .fields import MultipleFileField
 class EquipmentForm(forms.ModelForm):
     attachments = MultipleFileField(
         required=False,
-        widget=MultipleFileInput(attrs={'class': 'form-control'}),
+        widget=MultipleFileInput(attrs={
+            'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+        }),
         label='Anexos'
     )
 
@@ -14,19 +16,19 @@ class EquipmentForm(forms.ModelForm):
         model = Equipment
         fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'type': forms.Select(attrs={'class': 'form-select'}),
-            'brand': forms.TextInput(attrs={'class': 'form-control'}),
-            'model': forms.TextInput(attrs={'class': 'form-control'}),
-            'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'purchase_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'purchase_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'purchase_date': ['%Y-%m-%d', '%d/%m/%Y'],
         }
 
 class MaintenanceOrderForm(forms.ModelForm):
     attachments = MultipleFileField(
         required=False,
-        widget=MultipleFileInput(attrs={'class': 'form-control'}),
+        widget=MultipleFileInput(attrs={
+            'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+        }),
         label='Anexos'
     )
 
@@ -38,15 +40,13 @@ class MaintenanceOrderForm(forms.ModelForm):
             'invoice_number', 'invoice_file', 'notes'
         ]
         widgets = {
-            'equipment': forms.Select(attrs={'class': 'form-select'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'service_provider': forms.TextInput(attrs={'class': 'form-control'}),
-            'completion_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'warranty_expiration': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'warranty_terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'invoice_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'invoice_file': forms.FileInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'completion_date': forms.DateInput(attrs={'type': 'date'}),
+            'warranty_expiration': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'warranty_terms': forms.Textarea(attrs={'rows': 3}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'completion_date': ['%Y-%m-%d', '%d/%m/%Y'],
+            'warranty_expiration': ['%Y-%m-%d', '%d/%m/%Y'],
         } 

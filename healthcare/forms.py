@@ -42,7 +42,8 @@ class MedicalAppointmentForm(forms.ModelForm):
             'type': 'datetime-local',
             'class': 'form-control',
         }),
-        required=True
+        required=True,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
     )
     
     next_appointment = forms.DateTimeField(
@@ -51,7 +52,17 @@ class MedicalAppointmentForm(forms.ModelForm):
             'type': 'datetime-local',
             'class': 'form-control',
         }),
-        required=False
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
+    )
+
+    documents = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={
+            'class': 'form-control',
+            'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
+        }),
+        label='Documentos'
     )
 
     class Meta:
@@ -73,7 +84,8 @@ class MedicalProcedureForm(forms.ModelForm):
             'type': 'datetime-local',
             'class': 'form-control',
         }),
-        required=True
+        required=True,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
     )
     
     next_procedure_date = forms.DateTimeField(
@@ -82,7 +94,8 @@ class MedicalProcedureForm(forms.ModelForm):
             'type': 'datetime-local',
             'class': 'form-control',
         }),
-        required=False
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
     )
 
     location = forms.CharField(
@@ -115,28 +128,13 @@ class MedicalProcedureForm(forms.ModelForm):
         }
 
 class MedicationForm(forms.ModelForm):
-    start_date = forms.DateField(
-        label='Data de Início',
-        widget=forms.DateInput(attrs={
-            'type': 'date',
+    documents = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={
             'class': 'form-control',
-            'placeholder': 'dd/mm/aaaa'
+            'accept': '.pdf,.doc,.docx,.jpg,.jpeg,.png'
         }),
-        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
-        help_text='Formato: dd/mm/aaaa',
-        required=True
-    )
-    
-    end_date = forms.DateField(
-        label='Data de Término',
-        widget=forms.DateInput(attrs={
-            'type': 'date',
-            'class': 'form-control',
-            'placeholder': 'dd/mm/aaaa'
-        }),
-        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
-        help_text='Formato: dd/mm/aaaa',
-        required=False
+        label='Documentos'
     )
 
     class Meta:
@@ -146,7 +144,13 @@ class MedicationForm(forms.ModelForm):
             'prescribed_by', 'prescription_number', 'instructions', 'side_effects', 'notes'
         ]
         widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'end_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'instructions': forms.Textarea(attrs={'rows': 3}),
             'side_effects': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'start_date': ['%Y-%m-%d', '%d/%m/%Y'],
+            'end_date': ['%Y-%m-%d', '%d/%m/%Y'],
         } 

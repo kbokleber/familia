@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument, MedicationDocument
 from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm
 from django.utils import timezone
 from django.db.models import Q
@@ -122,9 +122,19 @@ def appointment_list(request):
 def appointment_create(request):
     """Cria uma nova consulta médica"""
     if request.method == 'POST':
-        form = MedicalAppointmentForm(request.POST)
+        form = MedicalAppointmentForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            appointment = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                AppointmentDocument.objects.create(
+                    appointment=appointment,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Consulta médica registrada com sucesso!')
             return redirect('healthcare:appointment_list')
     else:
@@ -145,13 +155,28 @@ def appointment_edit(request, pk):
     """Edita uma consulta médica"""
     appointment = get_object_or_404(MedicalAppointment, pk=pk)
     if request.method == 'POST':
-        form = MedicalAppointmentForm(request.POST, instance=appointment)
+        form = MedicalAppointmentForm(request.POST, request.FILES, instance=appointment)
         if form.is_valid():
             form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                AppointmentDocument.objects.create(
+                    appointment=appointment,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Consulta médica atualizada com sucesso!')
             return redirect('healthcare:appointment_list')
     else:
-        form = MedicalAppointmentForm(instance=appointment)
+        # Formata as datas para o formato esperado pelo input datetime-local
+        initial_data = {
+            'appointment_date': appointment.appointment_date.strftime('%Y-%m-%dT%H:%M'),
+            'next_appointment': appointment.next_appointment.strftime('%Y-%m-%dT%H:%M') if appointment.next_appointment else None
+        }
+        form = MedicalAppointmentForm(instance=appointment, initial=initial_data)
     
     context = {
         'page_title': 'Editar Consulta',
@@ -207,13 +232,11 @@ def procedure_create(request):
         if 'family_member' in request.GET:
             form.fields['family_member'].initial = request.GET['family_member']
     
-    context = {
-        'page_title': 'Novo Procedimento',
+    return render(request, 'healthcare/procedure_form.html', {
         'form': form,
         'model_name': 'Procedimento',
         'list_url': reverse('healthcare:procedure_list')
-    }
-    return render(request, 'healthcare/procedure_form.html', context)
+    })
 
 @login_required
 def procedure_edit(request, pk):
@@ -236,7 +259,12 @@ def procedure_edit(request, pk):
             messages.success(request, 'Procedimento médico atualizado com sucesso!')
             return redirect('healthcare:procedure_list')
     else:
-        form = MedicalProcedureForm(instance=procedure)
+        # Formata as datas para o formato esperado pelo input datetime-local
+        initial_data = {
+            'procedure_date': procedure.procedure_date.strftime('%Y-%m-%dT%H:%M'),
+            'next_procedure_date': procedure.next_procedure_date.strftime('%Y-%m-%dT%H:%M') if procedure.next_procedure_date else None
+        }
+        form = MedicalProcedureForm(instance=procedure, initial=initial_data)
     
     context = {
         'page_title': 'Editar Procedimento',
@@ -293,22 +321,36 @@ def medication_create(request):
 def medication_edit(request, pk):
     """Edita um medicamento"""
     medication = get_object_or_404(Medication, pk=pk)
-    if request.method == 'POST':
-        form = MedicationForm(request.POST, instance=medication)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Medicamento atualizado com sucesso!')
-            return redirect('healthcare:medication_detail', pk=medication.pk)
-    else:
-        form = MedicationForm(instance=medication)
     
-    context = {
-        'page_title': 'Editar Medicamento',
+    if request.method == 'POST':
+        form = MedicationForm(request.POST, request.FILES, instance=medication)
+        if form.is_valid():
+            medication = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                MedicationDocument.objects.create(
+                    medication=medication,
+                    file=file,
+                    name=file.name
+                )
+            
+            messages.success(request, 'Medicamento atualizado com sucesso!')
+            return redirect('healthcare:medication_list')
+    else:
+        # Formata as datas para o formato esperado pelo input datetime-local
+        initial_data = {
+            'start_date': medication.start_date.strftime('%Y-%m-%dT%H:%M') if medication.start_date else None,
+            'end_date': medication.end_date.strftime('%Y-%m-%dT%H:%M') if medication.end_date else None,
+        }
+        form = MedicationForm(instance=medication, initial=initial_data)
+    
+    return render(request, 'healthcare/medication_form.html', {
         'form': form,
         'model_name': 'Medicamento',
         'list_url': reverse('healthcare:medication_list')
-    }
-    return render(request, 'healthcare/medication_form.html', context)
+    })
 
 @login_required
 def medication_detail(request, pk):
@@ -318,3 +360,15 @@ def medication_detail(request, pk):
         'medication': medication
     }
     return render(request, 'healthcare/medication_detail.html', context)
+
+@login_required
+def medication_delete(request, pk):
+    """Exclui um medicamento"""
+    medication = get_object_or_404(Medication, pk=pk)
+    
+    if request.method == 'POST':
+        medication.delete()
+        messages.success(request, 'Medicamento excluído com sucesso!')
+        return redirect('healthcare:medication_list')
+    
+    return redirect('healthcare:medication_list')

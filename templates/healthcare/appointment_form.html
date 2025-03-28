@@ -19,22 +19,16 @@
 {{ form.prescription|as_crispy_field }}
 {{ form.next_appointment|as_crispy_field }}
 {{ form.notes|as_crispy_field }}
+{{ form.documents|as_crispy_field }}
 {% endblock %}
 
-{% block healthcare_content %}
-<div class="card">
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Salvar
-                </button>
-                <a href="{% url 'healthcare:appointment_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Cancelar
-                </a>
-            </div>
-        </form>
-    </div>
+{% block form_actions %}
+<div class="mt-4">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar
+    </button>
+    <a href="{% url 'healthcare:appointment_list' %}" class="btn btn-secondary">
+        <i class="bi bi-x-circle"></i> Cancelar
+    </a>
 </div>
 {% endblock %} 

@@ -5,6 +5,10 @@
     {% if form.instance.pk %}Editar Medicamento{% else %}Novo Medicamento{% endif %}
 {% endblock %}
 
+{% block content_title %}
+    {% if form.instance.pk %}Editar Medicamento{% else %}Novo Medicamento{% endif %}
+{% endblock %}
+
 {% block page_actions %}
 <a href="{% url 'healthcare:medication_list' %}" class="btn btn-secondary">
     <i class="bi bi-arrow-left"></i> Voltar
@@ -28,35 +32,36 @@
 {{ form.notes|as_crispy_field }}
 {% endblock %}
 
-{% block healthcare_content %}
-<div class="card">
-    <div class="card-body">
-        <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-6">
-                    {{ form.family_member|as_crispy_field }}
-                    {{ form.name|as_crispy_field }}
-                    {{ form.dosage|as_crispy_field }}
-                    {{ form.frequency|as_crispy_field }}
-                    {{ form.start_date|as_crispy_field }}
-                    {{ form.end_date|as_crispy_field }}
-                </div>
-                <div class="col-md-6">
-                    {{ form.prescribed_by|as_crispy_field }}
-                    {{ form.prescription_number|as_crispy_field }}
-                    {{ form.instructions|as_crispy_field }}
-                    {{ form.side_effects|as_crispy_field }}
-                    {{ form.notes|as_crispy_field }}
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Salvar
-                </button>
-            </div>
-        </form>
+{% block form_attachments %}
+<!-- Anexos -->
+<div class="row mt-3">
+    <div class="col-12">
+        {{ form.documents|as_crispy_field }}
     </div>
 </div>
+
+{% if form.instance.pk and form.instance.documents.exists %}
+<!-- Lista de Anexos Existentes -->
+<div class="row mt-3">
+    <div class="col-12">
+        <h5 class="mb-3">Anexos Existentes</h5>
+        <div class="list-group">
+            {% for doc in form.instance.documents.all %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi {% if doc.is_image %}bi-image{% elif doc.is_document %}bi-file-earmark-text{% else %}bi-file-earmark{% endif %} me-2"></i>
+                    {{ doc.name }}
+                    <small class="text-muted d-block">
+                        {{ doc.uploaded_at|date:"d/m/Y H:i" }}
+                    </small>
+                </div>
+                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class="bi bi-download"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %} 

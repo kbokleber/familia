@@ -59,6 +59,20 @@ class MedicalAppointment(models.Model):
     def __str__(self):
         return f"{self.family_member.name} - {self.appointment_date.strftime('%d/%m/%Y %H:%M')}"
 
+class AppointmentDocument(models.Model):
+    appointment = models.ForeignKey(MedicalAppointment, on_delete=models.CASCADE, related_name='documents', verbose_name='Consulta')
+    file = models.FileField('Arquivo', upload_to='appointment_documents/')
+    name = models.CharField('Nome do Arquivo', max_length=255)
+    uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento da Consulta'
+        verbose_name_plural = 'Documentos das Consultas'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.appointment}"
+
 class MedicalProcedure(models.Model):
     family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE, verbose_name='Membro da Família')
     procedure_name = models.CharField('Nome do Procedimento', max_length=200)
@@ -141,3 +155,26 @@ class Medication(models.Model):
         if self.end_date:
             return self.start_date <= today <= self.end_date
         return self.start_date <= today
+
+class MedicationDocument(models.Model):
+    medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')
+    file = models.FileField(upload_to='medication_documents/')
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def is_image(self):
+        """Verifica se o arquivo é uma imagem"""
+        return self.file.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
+
+    @property
+    def is_document(self):
+        """Verifica se o arquivo é um documento"""
+        return self.file.name.lower().endswith(('.pdf', '.doc', '.docx', '.txt', '.rtf'))
+
+    def __str__(self):
+        return f"{self.name} - {self.medication.name}"
+
+    class Meta:
+        verbose_name = 'Documento do Medicamento'
+        verbose_name_plural = 'Documentos dos Medicamentos'
