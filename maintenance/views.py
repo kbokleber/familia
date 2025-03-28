@@ -181,9 +181,8 @@ class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
         for i in range(6):
             date = now - timedelta(days=30 * i)
             month_orders = MaintenanceOrder.objects.filter(
-                status='concluida',
-                completion_date__year=date.year,
-                completion_date__month=date.month
+                created_at__year=date.year,
+                created_at__month=date.month
             )
             total_cost = sum(order.cost or 0 for order in month_orders)
             months.insert(0, date.strftime('%b/%Y'))
