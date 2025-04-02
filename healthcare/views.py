@@ -189,7 +189,11 @@ def family_member_edit(request, pk):
             messages.success(request, 'Membro da família atualizado com sucesso!')
             return redirect('healthcare:family_member_list')
     else:
-        form = FamilyMemberForm(instance=member)
+        # Formata a data de nascimento para o formato esperado pelo input date
+        initial_data = {
+            'birth_date': member.birth_date.strftime('%Y-%m-%d') if member.birth_date else None
+        }
+        form = FamilyMemberForm(instance=member, initial=initial_data)
     
     context = {
         'page_title': 'Editar Membro da Família',
@@ -389,7 +393,15 @@ def procedure_delete(request, pk):
 
 @login_required
 def medication_list(request):
-    medications = Medication.objects.all().order_by('-created_at')
+    # Buscar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+    
+    # Filtrar medicamentos dos membros da família do usuário
+    medications = Medication.objects.filter(
+        family_member__in=family_members
+    ).select_related('family_member').order_by('-created_at')
+
+    # Preparar dados para o template
     context = {
         'page_title': 'Medicamentos',
         'medications': medications

@@ -152,6 +152,8 @@ class Medication(models.Model):
         return f"{self.name} - {self.family_member.name}"
 
     def clean(self):
+        if not self.start_date:
+            raise ValidationError('A data de início é obrigatória.')
         if self.end_date and self.end_date < self.start_date:
             raise ValidationError('A data de término não pode ser anterior à data de início.')
 
@@ -159,10 +161,12 @@ class Medication(models.Model):
         return reverse('healthcare:medication_detail', kwargs={'pk': self.pk})
 
     def is_active(self):
+        if not self.start_date:
+            return False
         today = timezone.now().date()
         if self.end_date:
-            return self.start_date <= today <= self.end_date
-        return self.start_date <= today
+            return self.start_date.date() <= today <= self.end_date.date()
+        return self.start_date.date() <= today
 
 class MedicationDocument(models.Model):
     medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')

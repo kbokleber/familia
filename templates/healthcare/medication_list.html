@@ -21,6 +21,7 @@
                         <th>Dosagem</th>
                         <th>Frequência</th>
                         <th>Data de Início</th>
+                        <th>Data de Término</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
@@ -32,12 +33,29 @@
                         <td>{{ medication.name }}</td>
                         <td>{{ medication.dosage }}</td>
                         <td>{{ medication.get_frequency_display }}</td>
-                        <td>{{ medication.start_date|date:"d/m/Y" }}</td>
                         <td>
-                            {% if medication.is_active %}
-                            <span class="badge bg-success">Ativo</span>
+                            {% if medication.start_date %}
+                                {{ medication.start_date|date:"d/m/Y H:i" }}
                             {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
+                                <span class="text-muted">Não definida</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if medication.end_date %}
+                                {{ medication.end_date|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">Contínuo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if medication.start_date %}
+                                {% if medication.is_active %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning">Pendente</span>
                             {% endif %}
                         </td>
                         <td>

@@ -12,10 +12,19 @@ class FamilyMemberForm(forms.ModelForm):
             'emergency_phone', 'notes'
         ]
         widgets = {
-            'birth_date': forms.DateInput(attrs={'type': 'date'}),
+            'birth_date': forms.DateInput(
+                attrs={
+                    'type': 'date',
+                    'class': 'form-control',
+                    'required': 'required'
+                }
+            ),
             'allergies': forms.Textarea(attrs={'rows': 3}),
             'chronic_conditions': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+        input_formats = {
+            'birth_date': ['%Y-%m-%d', '%d/%m/%Y'],
         }
 
 class MedicalAppointmentForm(forms.ModelForm):
