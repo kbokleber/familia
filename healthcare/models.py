@@ -165,8 +165,8 @@ class Medication(models.Model):
             return False
         today = timezone.now().date()
         if self.end_date:
-            return self.start_date.date() <= today <= self.end_date.date()
-        return self.start_date.date() <= today
+            return self.start_date <= today <= self.end_date
+        return self.start_date <= today
 
 class MedicationDocument(models.Model):
     medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')

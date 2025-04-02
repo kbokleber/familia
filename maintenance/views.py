@@ -83,6 +83,17 @@ class UpdateOrderView(LoginRequiredMixin, UpdateView):
         context['attachments'] = self.object.images.all()
         return context
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.object:
+            # Formata as datas para o formato esperado pelo input date
+            initial_data = {
+                'completion_date': self.object.completion_date.strftime('%Y-%m-%d') if self.object.completion_date else None,
+                'warranty_expiration': self.object.warranty_expiration.strftime('%Y-%m-%d') if self.object.warranty_expiration else None,
+            }
+            form.initial.update(initial_data)
+        return form
+
     def get_queryset(self):
         return MaintenanceOrder.objects.all()
 
@@ -254,6 +265,16 @@ class EquipmentUpdateView(LoginRequiredMixin, UpdateView):
         context['is_update'] = True
         context['attachments'] = self.object.attachments.all()
         return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.object:
+            # Formata a data de compra para o formato esperado pelo input date
+            initial_data = {
+                'purchase_date': self.object.purchase_date.strftime('%Y-%m-%d') if self.object.purchase_date else None,
+            }
+            form.initial.update(initial_data)
+        return form
 
     def form_valid(self, form):
         response = super().form_valid(form)

@@ -83,6 +83,30 @@ class MedicalProcedureForm(forms.ModelForm):
         }
 
 class MedicationForm(forms.ModelForm):
+    start_date = forms.DateField(
+        label='Data de Início',
+        required=True,
+        widget=forms.DateInput(
+            attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }
+        ),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y']
+    )
+    
+    end_date = forms.DateField(
+        label='Data de Término',
+        required=False,
+        widget=forms.DateInput(
+            attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }
+        ),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y']
+    )
+
     documents = MultipleFileField(
         required=False,
         widget=MultipleFileInput(attrs={
@@ -98,14 +122,20 @@ class MedicationForm(forms.ModelForm):
             'end_date', 'notes'
         ]
         widgets = {
-            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
-        input_formats = {
-            'start_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
-            'end_date': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M'],
-        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+
+        if start_date and end_date and end_date < start_date:
+            raise forms.ValidationError({
+                'end_date': 'A data de término não pode ser anterior à data de início.'
+            })
+
+        return cleaned_data
 
 class ExamForm(forms.ModelForm):
     documents = MultipleFileField(

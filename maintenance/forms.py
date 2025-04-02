@@ -16,7 +16,12 @@ class EquipmentForm(forms.ModelForm):
         model = Equipment
         fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
         widgets = {
-            'purchase_date': forms.DateInput(attrs={'type': 'date'}),
+            'purchase_date': forms.DateInput(
+                attrs={
+                    'type': 'date',
+                    'class': 'form-control',
+                }
+            ),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
         input_formats = {

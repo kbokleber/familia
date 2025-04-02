@@ -452,18 +452,22 @@ def medication_edit(request, pk):
             messages.success(request, 'Medicamento atualizado com sucesso!')
             return redirect('healthcare:medication_list')
     else:
-        # Formata as datas para o formato esperado pelo input datetime-local
-        initial_data = {
-            'start_date': medication.start_date.strftime('%Y-%m-%dT%H:%M') if medication.start_date else None,
-            'end_date': medication.end_date.strftime('%Y-%m-%dT%H:%M') if medication.end_date else None,
-        }
+        # Formata as datas para o formato esperado pelo input date
+        initial_data = {}
+        if medication.start_date:
+            initial_data['start_date'] = medication.start_date.strftime('%Y-%m-%d')
+        if medication.end_date:
+            initial_data['end_date'] = medication.end_date.strftime('%Y-%m-%d')
+        
         form = MedicationForm(instance=medication, initial=initial_data)
     
-    return render(request, 'healthcare/medication_form.html', {
+    context = {
+        'page_title': 'Editar Medicamento',
         'form': form,
         'model_name': 'Medicamento',
         'list_url': reverse('healthcare:medication_list')
-    })
+    }
+    return render(request, 'healthcare/medication_form.html', context)
 
 @login_required
 def medication_detail(request, pk):
