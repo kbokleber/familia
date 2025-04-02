@@ -13,18 +13,17 @@ from datetime import datetime, timedelta
 @login_required
 def healthcare_dashboard(request):
     """Dashboard principal do sistema de saúde"""
-    # Buscar membros da família do usuário
-    family_members = FamilyMember.objects.filter(user=request.user)
+    # Buscar todos os membros da família
+    family_members = FamilyMember.objects.all()
 
     # Contadores
-    appointments_count = MedicalAppointment.objects.filter(family_member__user=request.user).count()
-    procedures_count = MedicalProcedure.objects.filter(family_member__user=request.user).count()
-    medications_count = Medication.objects.filter(family_member__user=request.user).count()
-    exams_count = Exam.objects.filter(user=request.user).count()
+    appointments_count = MedicalAppointment.objects.count()
+    procedures_count = MedicalProcedure.objects.count()
+    medications_count = Medication.objects.count()
+    exams_count = Exam.objects.count()
 
     # Próximas consultas
     upcoming_appointments = MedicalAppointment.objects.filter(
-        family_member__user=request.user,
         appointment_date__gte=timezone.now()
     ).order_by('appointment_date')[:5]
 
@@ -34,7 +33,6 @@ def healthcare_dashboard(request):
     
     # Dados de procedimentos
     procedures_data = MedicalProcedure.objects.filter(
-        family_member__user=request.user,
         procedure_date__range=(start_date, end_date)
     ).annotate(
         month=TruncMonth('procedure_date')
@@ -44,7 +42,6 @@ def healthcare_dashboard(request):
 
     # Dados de consultas
     appointments_data = MedicalAppointment.objects.filter(
-        family_member__user=request.user,
         appointment_date__range=(start_date, end_date)
     ).annotate(
         month=TruncMonth('appointment_date')
@@ -54,7 +51,6 @@ def healthcare_dashboard(request):
 
     # Dados de medicamentos
     medications_data = Medication.objects.filter(
-        family_member__user=request.user,
         start_date__range=(start_date, end_date)
     ).annotate(
         month=TruncMonth('start_date')
@@ -64,7 +60,6 @@ def healthcare_dashboard(request):
 
     # Dados de exames
     exams_data = Exam.objects.filter(
-        user=request.user,
         exam_date__range=(start_date, end_date)
     ).annotate(
         month=TruncMonth('exam_date')
@@ -160,9 +155,7 @@ def family_member_create(request):
     if request.method == 'POST':
         form = FamilyMemberForm(request.POST, request.FILES)
         if form.is_valid():
-            member = form.save(commit=False)
-            member.user = request.user
-            member.save()
+            member = form.save()
             messages.success(request, 'Membro da família cadastrado com sucesso!')
             return redirect('healthcare:family_member_list')
         else:
@@ -393,13 +386,8 @@ def procedure_delete(request, pk):
 
 @login_required
 def medication_list(request):
-    # Buscar membros da família do usuário
-    family_members = FamilyMember.objects.filter(user=request.user)
-    
-    # Filtrar medicamentos dos membros da família do usuário
-    medications = Medication.objects.filter(
-        family_member__in=family_members
-    ).select_related('family_member').order_by('-created_at')
+    """Lista todos os medicamentos"""
+    medications = Medication.objects.all().select_related('family_member').order_by('-created_at')
 
     # Preparar dados para o template
     context = {

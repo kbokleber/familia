@@ -14,7 +14,6 @@ class FamilyMember(models.Model):
         ('O', 'Outro'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Usuário', null=True, blank=True)
     name = models.CharField('Nome', max_length=100)
     photo = models.ImageField('Foto', upload_to='family_members/', null=True, blank=True)
     birth_date = models.DateField('Data de Nascimento')
