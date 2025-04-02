@@ -37,6 +37,18 @@ class FamilyMember(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def age(self):
+        """Calcula a idade baseada na data de nascimento."""
+        if not self.birth_date:
+            return None
+        today = timezone.now().date()
+        age = today.year - self.birth_date.year
+        # Ajusta a idade se ainda não fez aniversário este ano
+        if today.month < self.birth_date.month or (today.month == self.birth_date.month and today.day < self.birth_date.day):
+            age -= 1
+        return age
+
 class MedicalAppointment(models.Model):
     family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE, verbose_name='Membro da Família')
     doctor_name = models.CharField('Nome do Médico', max_length=100)
