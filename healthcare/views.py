@@ -452,12 +452,15 @@ def medication_edit(request, pk):
             messages.success(request, 'Medicamento atualizado com sucesso!')
             return redirect('healthcare:medication_list')
     else:
-        # Formata as datas para o formato esperado pelo input date
+        # Formata as datas para o formato esperado pelo input datetime-local
         initial_data = {}
         if medication.start_date:
-            initial_data['start_date'] = medication.start_date.strftime('%Y-%m-%d')
+            # Converte para o fuso horário local e depois para o formato esperado
+            local_start_date = timezone.localtime(medication.start_date)
+            initial_data['start_date'] = local_start_date.strftime('%Y-%m-%dT%H:%M')
         if medication.end_date:
-            initial_data['end_date'] = medication.end_date.strftime('%Y-%m-%d')
+            local_end_date = timezone.localtime(medication.end_date)
+            initial_data['end_date'] = local_end_date.strftime('%Y-%m-%dT%H:%M')
         
         form = MedicationForm(instance=medication, initial=initial_data)
     

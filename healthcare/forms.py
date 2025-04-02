@@ -83,28 +83,28 @@ class MedicalProcedureForm(forms.ModelForm):
         }
 
 class MedicationForm(forms.ModelForm):
-    start_date = forms.DateField(
-        label='Data de Início',
+    start_date = forms.DateTimeField(
+        label='Data e Hora de Início',
         required=True,
-        widget=forms.DateInput(
+        widget=forms.DateTimeInput(
             attrs={
-                'type': 'date',
+                'type': 'datetime-local',
                 'class': 'form-control'
             }
         ),
-        input_formats=['%Y-%m-%d', '%d/%m/%Y']
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
     )
     
-    end_date = forms.DateField(
-        label='Data de Término',
+    end_date = forms.DateTimeField(
+        label='Data e Hora de Término',
         required=False,
-        widget=forms.DateInput(
+        widget=forms.DateTimeInput(
             attrs={
-                'type': 'date',
+                'type': 'datetime-local',
                 'class': 'form-control'
             }
         ),
-        input_formats=['%Y-%m-%d', '%d/%m/%Y']
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M']
     )
 
     documents = MultipleFileField(
@@ -132,7 +132,7 @@ class MedicationForm(forms.ModelForm):
 
         if start_date and end_date and end_date < start_date:
             raise forms.ValidationError({
-                'end_date': 'A data de término não pode ser anterior à data de início.'
+                'end_date': 'A data e hora de término não podem ser anteriores à data e hora de início.'
             })
 
         return cleaned_data

@@ -133,8 +133,8 @@ class Medication(models.Model):
     name = models.CharField(max_length=100, verbose_name='Nome do Medicamento')
     dosage = models.CharField(max_length=50, verbose_name='Dosagem')
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, verbose_name='Frequência')
-    start_date = models.DateField(verbose_name='Data de Início')
-    end_date = models.DateField(null=True, blank=True, verbose_name='Data de Término')
+    start_date = models.DateTimeField(verbose_name='Data e Hora de Início')
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name='Data e Hora de Término')
     prescribed_by = models.CharField(max_length=100, blank=True, verbose_name='Prescrito por')
     prescription_number = models.CharField(max_length=50, blank=True, verbose_name='Número da Receita')
     instructions = models.TextField(blank=True, verbose_name='Instruções Especiais')
@@ -153,9 +153,9 @@ class Medication(models.Model):
 
     def clean(self):
         if not self.start_date:
-            raise ValidationError('A data de início é obrigatória.')
+            raise ValidationError('A data e hora de início são obrigatórias.')
         if self.end_date and self.end_date < self.start_date:
-            raise ValidationError('A data de término não pode ser anterior à data de início.')
+            raise ValidationError('A data e hora de término não podem ser anteriores à data e hora de início.')
 
     def get_absolute_url(self):
         return reverse('healthcare:medication_detail', kwargs={'pk': self.pk})
@@ -163,10 +163,10 @@ class Medication(models.Model):
     def is_active(self):
         if not self.start_date:
             return False
-        today = timezone.now().date()
+        now = timezone.now()
         if self.end_date:
-            return self.start_date <= today <= self.end_date
-        return self.start_date <= today
+            return self.start_date <= now <= self.end_date
+        return self.start_date <= now
 
 class MedicationDocument(models.Model):
     medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')

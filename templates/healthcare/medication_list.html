@@ -1,4 +1,5 @@
 {% extends 'healthcare/base_healthcare.html' %}
+{% load tz %}
 
 {% block page_title %}Medicamentos{% endblock %}
 
@@ -35,14 +36,14 @@
                         <td>{{ medication.get_frequency_display }}</td>
                         <td>
                             {% if medication.start_date %}
-                                {{ medication.start_date|date:"d/m/Y" }}
+                                {{ medication.start_date|timezone:"America/Sao_Paulo"|date:"d/m/Y H:i" }}
                             {% else %}
                                 <span class="text-muted">Não definida</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if medication.end_date %}
-                                {{ medication.end_date|date:"d/m/Y" }}
+                                {{ medication.end_date|timezone:"America/Sao_Paulo"|date:"d/m/Y H:i" }}
                             {% else %}
                                 <span class="text-muted">Contínuo</span>
                             {% endif %}
