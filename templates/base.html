@@ -199,14 +199,14 @@
                     </div>
                     <ul class="nav flex-column ms-2">
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare' in request.path and not 'healthcare/members' in request.path and not 'healthcare/appointments' in request.path and not 'healthcare/procedures' in request.path and not 'healthcare/medications' in request.path %}active{% endif %}" href="{% url 'healthcare:dashboard' %}">
-                                <i class="bi bi-speedometer2"></i>
+                            <a class="nav-link {% if 'healthcare' in request.path and not 'healthcare/family-members' in request.path and not 'healthcare/appointments' in request.path %}active{% endif %}" href="{% url 'healthcare:dashboard' %}">
+                                <i class="bi bi-heart-pulse"></i>
                                 Dashboard Saúde
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare/members' in request.path %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
-                                <img src="{% static 'img/family_icon.svg' %}" alt="Ícone Família" width="16" height="16" class="me-2">
+                            <a class="nav-link {% if 'healthcare/family-members' in request.path %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
+                                <i class="bi bi-people"></i>
                                 Membros da Família
                             </a>
                         </li>
@@ -232,7 +232,6 @@
                 </li>
 
                 <!-- Configurações -->
-                {% if user.is_superuser %}
                 <li class="nav-item mt-3">
                     <div class="px-3 mb-2">
                         <small class="text-muted">Configurações</small>
@@ -246,14 +245,13 @@
                         </li>
                     </ul>
                 </li>
-                {% endif %}
             </ul>
         </div>
 
         <!-- Main Content -->
-        <div class="main-content p-4">
+        <div class="main-content flex-grow-1 p-4">
             {% if messages %}
-            <div class="messages mb-4">
+            <div class="messages">
                 {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                     {{ message }}
@@ -262,6 +260,7 @@
                 {% endfor %}
             </div>
             {% endif %}
+            
             {% block main_content %}{% endblock %}
         </div>
     </div>
