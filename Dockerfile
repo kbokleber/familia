@@ -12,6 +12,9 @@ ENV VERSION=$VERSION
 # Defina o diretório de trabalho
 WORKDIR /app
 
+# Instale o cliente do PostgreSQL
+RUN apt-get update && apt-get install -y postgresql-client
+
 # Instale as dependências do sistema
 RUN apt-get update && apt-get install -y \
     postgresql-client \
