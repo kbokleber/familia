@@ -9,6 +9,7 @@ from django.db.models import Q, Count
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from datetime import datetime, timedelta
+from django.db import transaction
 
 @login_required
 def healthcare_dashboard(request):
@@ -668,13 +669,26 @@ def save_family_members_order(request):
             member_ids = request.POST.getlist('member_ids[]')
             print(f"[DEBUG] Recebendo nova ordem de membros: {member_ids}")
             
-            for index, member_id in enumerate(member_ids):
-                member = FamilyMember.objects.get(pk=member_id)
-                print(f"[DEBUG] Atualizando membro {member.name} (ID: {member_id}) para ordem {index}")
-                member.order = index
-                member.save()
+            # Primeiro, verifica se todos os IDs são válidos
+            for member_id in member_ids:
+                try:
+                    FamilyMember.objects.get(pk=member_id)
+                except FamilyMember.DoesNotExist:
+                    print(f"[ERROR] Membro com ID {member_id} não encontrado")
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'Membro com ID {member_id} não encontrado'
+                    }, status=400)
             
-            # Verificar a ordem após salvar
+            # Atualiza a ordem de todos os membros em uma única transação
+            with transaction.atomic():
+                for index, member_id in enumerate(member_ids):
+                    member = FamilyMember.objects.get(pk=member_id)
+                    print(f"[DEBUG] Atualizando membro {member.name} (ID: {member_id}) para ordem {index}")
+                    member.order = index
+                    member.save(update_fields=['order'])
+            
+            # Verifica a ordem após salvar
             all_members = FamilyMember.objects.all().order_by('order', 'name')
             print("[DEBUG] Ordem atual dos membros após salvar:")
             for member in all_members:
@@ -683,5 +697,13 @@ def save_family_members_order(request):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             print(f"[ERROR] Erro ao salvar ordem: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Erro ao salvar ordem: {str(e)}'
+            }, status=400)
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Método não permitido'
+    }, status=405)
