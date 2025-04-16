@@ -126,7 +126,6 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Meu Perfil</a></li>
-                            <li><a class="dropdown-item" href="{% url 'accounts:settings' %}">Configurações</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="{% url 'logout' %}" class="dropdown-item p-0">
@@ -161,30 +160,30 @@
             <ul class="nav flex-column">
                 <!-- Manutenção Module -->
                 <li class="nav-item">
-                    <div class="px-3 mb-2">
-                        <small class="text-muted">Manutenção</small>
-                    </div>
-                    <ul class="nav flex-column ms-2">
+                    <a class="nav-link px-3 mb-2" data-bs-toggle="collapse" href="#maintenanceSubmenu" role="button" aria-expanded="{% if request.resolver_match.app_name == 'maintenance' %}true{% else %}false{% endif %}" aria-controls="maintenanceSubmenu">
+                        <small class="text-muted">Manutenção <i class="bi bi-chevron-{% if request.resolver_match.app_name == 'maintenance' %}up{% else %}down{% endif %} float-end"></i></small>
+                    </a>
+                    <ul class="nav flex-column ms-2 collapse {% if request.resolver_match.app_name == 'maintenance' %}show{% endif %}" id="maintenanceSubmenu">
                         <li class="nav-item">
-                            <a class="nav-link {% if 'maintenance' in request.path and not 'maintenance/orders' in request.path and not 'maintenance/equipment' in request.path and not 'maintenance/order' in request.path %}active{% endif %}" href="{% url 'maintenance:dashboard' %}">
+                            <a class="nav-link {% if request.resolver_match.view_name == 'maintenance:dashboard' %}active{% endif %}" href="{% url 'maintenance:dashboard' %}">
                                 <i class="bi bi-speedometer2"></i>
                                 Dashboard Manutenção
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'maintenance/equipment' in request.path %}active{% endif %}" href="{% url 'maintenance:equipment_create' %}">
+                            <a class="nav-link {% if 'maintenance:equipment' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'maintenance:equipment_create' %}">
                                 <i class="bi bi-tools"></i>
                                 Cadastrar Equipamento
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'maintenance/order/create' in request.path %}active{% endif %}" href="{% url 'maintenance:order_create' %}">
+                            <a class="nav-link {% if request.resolver_match.view_name == 'maintenance:order_create' %}active{% endif %}" href="{% url 'maintenance:order_create' %}">
                                 <i class="bi bi-plus-circle"></i>
                                 Registrar Manutenção
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'maintenance/orders' in request.path %}active{% endif %}" href="{% url 'maintenance:order_list' %}">
+                            <a class="nav-link {% if 'maintenance:order' in request.resolver_match.view_name and 'create' not in request.resolver_match.view_name %}active{% endif %}" href="{% url 'maintenance:order_list' %}">
                                 <i class="bi bi-clock-history"></i>
                                 Histórico de Manutenções
                             </a>
@@ -194,36 +193,36 @@
 
                 <!-- Saúde Familiar Module -->
                 <li class="nav-item mt-3">
-                    <div class="px-3 mb-2">
-                        <small class="text-muted">Saúde Familiar</small>
-                    </div>
-                    <ul class="nav flex-column ms-2">
+                    <a class="nav-link px-3 mb-2" data-bs-toggle="collapse" href="#healthcareSubmenu" role="button" aria-expanded="{% if request.resolver_match.app_name == 'healthcare' %}true{% else %}false{% endif %}" aria-controls="healthcareSubmenu">
+                        <small class="text-muted">Saúde Familiar <i class="bi bi-chevron-{% if request.resolver_match.app_name == 'healthcare' %}up{% else %}down{% endif %} float-end"></i></small>
+                    </a>
+                    <ul class="nav flex-column ms-2 collapse {% if request.resolver_match.app_name == 'healthcare' %}show{% endif %}" id="healthcareSubmenu">
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare' in request.path and not 'healthcare/family-members' in request.path and not 'healthcare/appointments' in request.path %}active{% endif %}" href="{% url 'healthcare:dashboard' %}">
+                            <a class="nav-link {% if request.resolver_match.view_name == 'healthcare:dashboard' %}active{% endif %}" href="{% url 'healthcare:dashboard' %}">
                                 <i class="bi bi-heart-pulse"></i>
                                 Dashboard Saúde
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare/family-members' in request.path %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
+                            <a class="nav-link {% if 'healthcare:family_member' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'healthcare:family_member_list' %}">
                                 <i class="bi bi-people"></i>
                                 Membros da Família
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare/appointments' in request.path %}active{% endif %}" href="{% url 'healthcare:appointment_list' %}">
+                            <a class="nav-link {% if 'healthcare:appointment' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'healthcare:appointment_list' %}">
                                 <i class="bi bi-calendar-check"></i>
                                 Consultas
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare/procedures' in request.path %}active{% endif %}" href="{% url 'healthcare:procedure_list' %}">
+                            <a class="nav-link {% if 'healthcare:procedure' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'healthcare:procedure_list' %}">
                                 <i class="bi bi-clipboard-pulse"></i>
                                 Procedimentos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'healthcare/medications' in request.path %}active{% endif %}" href="{% url 'healthcare:medication_list' %}">
+                            <a class="nav-link {% if 'healthcare:medication' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'healthcare:medication_list' %}">
                                 <i class="bi bi-capsule"></i>
                                 Medicamentos
                             </a>
@@ -233,12 +232,12 @@
 
                 <!-- Configurações -->
                 <li class="nav-item mt-3">
-                    <div class="px-3 mb-2">
-                        <small class="text-muted">Configurações</small>
-                    </div>
-                    <ul class="nav flex-column ms-2">
+                    <a class="nav-link px-3 mb-2" data-bs-toggle="collapse" href="#settingsSubmenu" role="button" aria-expanded="{% if request.resolver_match.app_name == 'accounts' %}true{% else %}false{% endif %}" aria-controls="settingsSubmenu">
+                        <small class="text-muted">Configurações <i class="bi bi-chevron-{% if request.resolver_match.app_name == 'accounts' %}up{% else %}down{% endif %} float-end"></i></small>
+                    </a>
+                    <ul class="nav flex-column ms-2 collapse {% if request.resolver_match.app_name == 'accounts' %}show{% endif %}" id="settingsSubmenu">
                         <li class="nav-item">
-                            <a class="nav-link {% if 'accounts/users' in request.path %}active{% endif %}" href="{% url 'accounts:user_list' %}">
+                            <a class="nav-link {% if 'accounts:user' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'accounts:user_list' %}">
                                 <i class="bi bi-people-fill"></i>
                                 Gerenciar Usuários
                             </a>
@@ -291,6 +290,21 @@
                     sidebar.classList.toggle('active');
                 });
             }
+        });
+
+        document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (element) {
+            element.addEventListener('click', function () {
+                const icon = this.querySelector('.bi-chevron-down, .bi-chevron-up');
+                if (icon) {
+                    if (icon.classList.contains('bi-chevron-down')) {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-up');
+                    } else {
+                        icon.classList.remove('bi-chevron-up');
+                        icon.classList.add('bi-chevron-down');
+                    }
+                }
+            });
         });
     </script>
     {% block extra_js %}{% endblock %}
