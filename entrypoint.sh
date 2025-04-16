@@ -1,5 +1,6 @@
 #!/bin/bash
 
+<<<<<<< HEAD
 # Função para esperar o banco de dados
 wait_for_db() {
     echo "Waiting for database..."
@@ -45,3 +46,32 @@ else
     echo "Failed to connect to database. Exiting..."
     exit 1
 fi
+=======
+# Espera o banco de dados estar pronto
+echo "Waiting for database..."
+while ! nc -z db 5432; do
+  sleep 0.1
+done
+echo "Database is ready!"
+
+# Executa as migrations
+echo "Running migrations..."
+python manage.py migrate
+
+# Cria um superusuÃ¡rio se nÃ£o existir
+echo "Creating superuser..."
+python manage.py shell -c "
+from django.contrib.auth import get_user_model;
+User = get_user_model();
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+"
+
+# Coleta arquivos estÃ¡ticos
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
+# Inicia o servidor
+echo "Starting server..."
+exec "$@" 
+>>>>>>> 0465f147a587204e8901920f1e6e6c863457350d

@@ -1,25 +1,124 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication
-from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm
+from django.urls import reverse
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument, MedicationDocument, Exam
+from .forms import FamilyMemberForm, MedicalAppointmentForm, MedicalProcedureForm, MedicationForm, ExamForm
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
+from datetime import datetime, timedelta
 
 @login_required
 def healthcare_dashboard(request):
     """Dashboard principal do sistema de saúde"""
+    # Buscar todos os membros da família
     family_members = FamilyMember.objects.all()
+
+    # Contadores
+    appointments_count = MedicalAppointment.objects.count()
+    procedures_count = MedicalProcedure.objects.count()
+    medications_count = Medication.objects.count()
+    exams_count = Exam.objects.count()
+
+    # Próximas consultas
     upcoming_appointments = MedicalAppointment.objects.filter(
         appointment_date__gte=timezone.now()
     ).order_by('appointment_date')[:5]
-    recent_procedures = MedicalProcedure.objects.all().order_by('-procedure_date')[:5]
+
+    # Dados do gráfico (últimos 12 meses)
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=365)
     
+    # Dados de procedimentos
+    procedures_data = MedicalProcedure.objects.filter(
+        procedure_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('procedure_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de consultas
+    appointments_data = MedicalAppointment.objects.filter(
+        appointment_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('appointment_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de medicamentos
+    medications_data = Medication.objects.filter(
+        start_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('start_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Dados de exames
+    exams_data = Exam.objects.filter(
+        exam_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('exam_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Preparar dados para o gráfico
+    chart_labels = []
+    procedures_chart_data = []
+    appointments_chart_data = []
+    medications_chart_data = []
+    exams_chart_data = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_label = current_date.strftime('%b/%Y')
+        chart_labels.append(month_label)
+        
+        # Encontrar os valores para este mês
+        month_procedures = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        procedures_chart_data.append(month_procedures)
+
+        month_appointments = next(
+            (item['count'] for item in appointments_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        appointments_chart_data.append(month_appointments)
+
+        month_medications = next(
+            (item['count'] for item in medications_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        medications_chart_data.append(month_medications)
+
+        month_exams = next(
+            (item['count'] for item in exams_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        exams_chart_data.append(month_exams)
+        
+        current_date += timedelta(days=32)  # Avançar para o próximo mês
+
     context = {
         'page_title': 'Dashboard',
         'family_members': family_members,
         'upcoming_appointments': upcoming_appointments,
-        'recent_procedures': recent_procedures,
+        'appointments_count': appointments_count,
+        'procedures_count': procedures_count,
+        'medications_count': medications_count,
+        'exams_count': exams_count,
+        'chart_labels': chart_labels,
+        'procedures_chart_data': procedures_chart_data,
+        'appointments_chart_data': appointments_chart_data,
+        'medications_chart_data': medications_chart_data,
+        'exams_chart_data': exams_chart_data,
     }
     return render(request, 'healthcare/dashboard.html', context)
 
@@ -29,7 +128,7 @@ def family_member_list(request):
     members = FamilyMember.objects.all()
     context = {
         'page_title': 'Membros da Família',
-        'members': members
+        'family_members': members
     }
     return render(request, 'healthcare/family_member_list.html', context)
 
@@ -66,33 +165,46 @@ def family_member_create(request):
     
     context = {
         'page_title': 'Novo Membro da Família',
-        'form': form
+        'form': form,
+        'model_name': 'Membro da Família',
+        'list_url': reverse('healthcare:family_member_list')
     }
     return render(request, 'healthcare/family_member_form.html', context)
 
 @login_required
 def family_member_edit(request, pk):
-    """Edita um membro da família existente"""
+    """Edita um membro da família"""
     member = get_object_or_404(FamilyMember, pk=pk)
     if request.method == 'POST':
         form = FamilyMemberForm(request.POST, request.FILES, instance=member)
         if form.is_valid():
             form.save()
             messages.success(request, 'Membro da família atualizado com sucesso!')
-            return redirect('healthcare:family_member_detail', pk=pk)
-        else:
-            messages.error(request, 'Por favor, corrija os erros abaixo.')
+            return redirect('healthcare:family_member_list')
     else:
-        form = FamilyMemberForm(instance=member)
-        # Formata a data para o formato HTML5 date input
-        if member.birth_date:
-            form.initial['birth_date'] = member.birth_date.strftime('%Y-%m-%d')
+        # Formata a data de nascimento para o formato esperado pelo input date
+        initial_data = {
+            'birth_date': member.birth_date.strftime('%Y-%m-%d') if member.birth_date else None
+        }
+        form = FamilyMemberForm(instance=member, initial=initial_data)
     
     context = {
-        'page_title': f'Editar {member.name}',
-        'form': form
+        'page_title': 'Editar Membro da Família',
+        'form': form,
+        'model_name': 'Membro da Família',
+        'list_url': reverse('healthcare:family_member_list')
     }
     return render(request, 'healthcare/family_member_form.html', context)
+
+@login_required
+def family_member_delete(request, pk):
+    """Exclui um membro da família"""
+    member = get_object_or_404(FamilyMember, pk=pk)
+    if request.method == 'POST':
+        member.delete()
+        messages.success(request, 'Membro da família excluído com sucesso!')
+        return redirect('healthcare:family_member_list')
+    return redirect('healthcare:family_member_list')
 
 @login_required
 def appointment_list(request):
@@ -108,9 +220,19 @@ def appointment_list(request):
 def appointment_create(request):
     """Cria uma nova consulta médica"""
     if request.method == 'POST':
-        form = MedicalAppointmentForm(request.POST)
+        form = MedicalAppointmentForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            appointment = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                AppointmentDocument.objects.create(
+                    appointment=appointment,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Consulta médica registrada com sucesso!')
             return redirect('healthcare:appointment_list')
     else:
@@ -120,32 +242,59 @@ def appointment_create(request):
     
     context = {
         'page_title': 'Nova Consulta',
-        'form': form
+        'form': form,
+        'model_name': 'Consulta',
+        'list_url': reverse('healthcare:appointment_list')
     }
     return render(request, 'healthcare/appointment_form.html', context)
 
 @login_required
 def appointment_edit(request, pk):
-    """Edita uma consulta médica existente"""
+    """Edita uma consulta médica"""
     appointment = get_object_or_404(MedicalAppointment, pk=pk)
     if request.method == 'POST':
-        form = MedicalAppointmentForm(request.POST, instance=appointment)
+        form = MedicalAppointmentForm(request.POST, request.FILES, instance=appointment)
         if form.is_valid():
             form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                AppointmentDocument.objects.create(
+                    appointment=appointment,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Consulta médica atualizada com sucesso!')
             return redirect('healthcare:appointment_list')
     else:
+        # Formata as datas para o formato esperado pelo input datetime-local
         initial_data = {
-            'appointment_date': appointment.appointment_date.strftime('%Y-%m-%dT%H:%M') if appointment.appointment_date else None,
-            'next_appointment': appointment.next_appointment.strftime('%Y-%m-%dT%H:%M') if appointment.next_appointment else None,
+            'appointment_date': appointment.appointment_date.strftime('%Y-%m-%dT%H:%M'),
+            'next_appointment': appointment.next_appointment.strftime('%Y-%m-%dT%H:%M') if appointment.next_appointment else None
         }
         form = MedicalAppointmentForm(instance=appointment, initial=initial_data)
     
     context = {
         'page_title': 'Editar Consulta',
-        'form': form
+        'form': form,
+        'model_name': 'Consulta',
+        'list_url': reverse('healthcare:appointment_list')
     }
     return render(request, 'healthcare/appointment_form.html', context)
+
+@login_required
+def appointment_delete(request, pk):
+    """Exclui uma consulta médica"""
+    appointment = get_object_or_404(MedicalAppointment, pk=pk)
+    
+    if request.method == 'POST':
+        appointment.delete()
+        messages.success(request, 'Consulta médica excluída com sucesso!')
+        return redirect('healthcare:appointment_list')
+    
+    return redirect('healthcare:appointment_list')
 
 @login_required
 def procedure_list(request):
@@ -161,9 +310,19 @@ def procedure_list(request):
 def procedure_create(request):
     """Cria um novo procedimento médico"""
     if request.method == 'POST':
-        form = MedicalProcedureForm(request.POST)
+        form = MedicalProcedureForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            procedure = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                ProcedureDocument.objects.create(
+                    procedure=procedure,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Procedimento médico registrado com sucesso!')
             return redirect('healthcare:procedure_list')
     else:
@@ -171,38 +330,66 @@ def procedure_create(request):
         if 'family_member' in request.GET:
             form.fields['family_member'].initial = request.GET['family_member']
     
-    context = {
-        'page_title': 'Novo Procedimento',
-        'form': form
-    }
-    return render(request, 'healthcare/procedure_form.html', context)
+    return render(request, 'healthcare/procedure_form.html', {
+        'form': form,
+        'model_name': 'Procedimento',
+        'list_url': reverse('healthcare:procedure_list')
+    })
 
 @login_required
 def procedure_edit(request, pk):
-    """Edita um procedimento médico existente"""
+    """Edita um procedimento médico"""
     procedure = get_object_or_404(MedicalProcedure, pk=pk)
     if request.method == 'POST':
-        form = MedicalProcedureForm(request.POST, instance=procedure)
+        form = MedicalProcedureForm(request.POST, request.FILES, instance=procedure)
         if form.is_valid():
             form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                ProcedureDocument.objects.create(
+                    procedure=procedure,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Procedimento médico atualizado com sucesso!')
             return redirect('healthcare:procedure_list')
     else:
+        # Formata as datas para o formato esperado pelo input datetime-local
         initial_data = {
-            'procedure_date': procedure.procedure_date.strftime('%Y-%m-%dT%H:%M') if procedure.procedure_date else None,
-            'next_procedure_date': procedure.next_procedure_date.strftime('%Y-%m-%dT%H:%M') if procedure.next_procedure_date else None,
+            'procedure_date': procedure.procedure_date.strftime('%Y-%m-%dT%H:%M'),
+            'next_procedure_date': procedure.next_procedure_date.strftime('%Y-%m-%dT%H:%M') if procedure.next_procedure_date else None
         }
         form = MedicalProcedureForm(instance=procedure, initial=initial_data)
     
     context = {
         'page_title': 'Editar Procedimento',
-        'form': form
+        'form': form,
+        'model_name': 'Procedimento',
+        'list_url': reverse('healthcare:procedure_list')
     }
     return render(request, 'healthcare/procedure_form.html', context)
 
 @login_required
+def procedure_delete(request, pk):
+    """Exclui um procedimento médico"""
+    procedure = get_object_or_404(MedicalProcedure, pk=pk)
+    
+    if request.method == 'POST':
+        procedure.delete()
+        messages.success(request, 'Procedimento médico excluído com sucesso!')
+        return redirect('healthcare:procedure_list')
+    
+    return redirect('healthcare:procedure_list')
+
+@login_required
 def medication_list(request):
-    medications = Medication.objects.all().order_by('-created_at')
+    """Lista todos os medicamentos"""
+    medications = Medication.objects.all().select_related('family_member').order_by('-created_at')
+
+    # Preparar dados para o template
     context = {
         'page_title': 'Medicamentos',
         'medications': medications
@@ -211,6 +398,7 @@ def medication_list(request):
 
 @login_required
 def medication_create(request):
+    """Cria um novo medicamento"""
     if request.method == 'POST':
         form = MedicationForm(request.POST)
         if form.is_valid():
@@ -224,29 +412,51 @@ def medication_create(request):
     
     context = {
         'page_title': 'Novo Medicamento',
-        'form': form
+        'form': form,
+        'model_name': 'Medicamento',
+        'list_url': reverse('healthcare:medication_list')
     }
     return render(request, 'healthcare/medication_form.html', context)
 
 @login_required
 def medication_edit(request, pk):
+    """Edita um medicamento"""
     medication = get_object_or_404(Medication, pk=pk)
+    
     if request.method == 'POST':
-        form = MedicationForm(request.POST, instance=medication)
+        form = MedicationForm(request.POST, request.FILES, instance=medication)
         if form.is_valid():
             medication = form.save()
+            
+            # Processa os arquivos enviados
+            files = request.FILES.getlist('documents')
+            for file in files:
+                MedicationDocument.objects.create(
+                    medication=medication,
+                    file=file,
+                    name=file.name
+                )
+            
             messages.success(request, 'Medicamento atualizado com sucesso!')
-            return redirect('healthcare:medication_detail', pk=medication.pk)
+            return redirect('healthcare:medication_list')
     else:
-        initial_data = {
-            'start_date': medication.start_date.strftime('%Y-%m-%d') if medication.start_date else None,
-            'end_date': medication.end_date.strftime('%Y-%m-%d') if medication.end_date else None,
-        }
+        # Formata as datas para o formato esperado pelo input datetime-local
+        initial_data = {}
+        if medication.start_date:
+            # Converte para o fuso horário local e depois para o formato esperado
+            local_start_date = timezone.localtime(medication.start_date)
+            initial_data['start_date'] = local_start_date.strftime('%Y-%m-%dT%H:%M')
+        if medication.end_date:
+            local_end_date = timezone.localtime(medication.end_date)
+            initial_data['end_date'] = local_end_date.strftime('%Y-%m-%dT%H:%M')
+        
         form = MedicationForm(instance=medication, initial=initial_data)
     
     context = {
         'page_title': 'Editar Medicamento',
-        'form': form
+        'form': form,
+        'model_name': 'Medicamento',
+        'list_url': reverse('healthcare:medication_list')
     }
     return render(request, 'healthcare/medication_form.html', context)
 
@@ -258,3 +468,155 @@ def medication_detail(request, pk):
         'medication': medication
     }
     return render(request, 'healthcare/medication_detail.html', context)
+
+@login_required
+def medication_delete(request, pk):
+    """Exclui um medicamento"""
+    medication = get_object_or_404(Medication, pk=pk)
+    
+    if request.method == 'POST':
+        medication.delete()
+        messages.success(request, 'Medicamento excluído com sucesso!')
+        return redirect('healthcare:medication_list')
+    
+    return redirect('healthcare:medication_list')
+
+@login_required
+def procedures_chart_data(request):
+    months = int(request.GET.get('months', 12))
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=months * 30)
+    
+    # Buscar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+    
+    procedures_data = MedicalProcedure.objects.filter(
+        family_member__in=family_members,
+        procedure_date__range=(start_date, end_date)
+    ).annotate(
+        month=TruncMonth('procedure_date')
+    ).values('month').annotate(
+        count=Count('id')
+    ).order_by('month')
+
+    # Preparar dados para o gráfico
+    labels = []
+    data = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_label = current_date.strftime('%b/%Y')
+        labels.append(month_label)
+        
+        # Encontrar o valor para este mês
+        month_data = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        data.append(month_data)
+        
+        current_date += timedelta(days=32)  # Avançar para o próximo mês
+
+    return JsonResponse({
+        'labels': labels,
+        'data': data
+    })
+
+def chart_data(request):
+    """View para fornecer dados do gráfico via API"""
+    months = int(request.GET.get('months', 12))
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=30 * months)
+    
+    # Filtrar membros da família do usuário
+    family_members = FamilyMember.objects.filter(user=request.user)
+    
+    # Consultas
+    appointments_data = (
+        MedicalAppointment.objects
+        .filter(family_member__in=family_members, appointment_date__gte=start_date)
+        .annotate(month=TruncMonth('appointment_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Medicamentos
+    medications_data = (
+        Medication.objects
+        .filter(family_member__in=family_members, start_date__gte=start_date)
+        .annotate(month=TruncMonth('start_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Procedimentos
+    procedures_data = (
+        MedicalProcedure.objects
+        .filter(family_member__in=family_members, procedure_date__gte=start_date)
+        .annotate(month=TruncMonth('procedure_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Exames
+    exams_data = (
+        Exam.objects
+        .filter(family_member__in=family_members, exam_date__gte=start_date)
+        .annotate(month=TruncMonth('exam_date'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+    
+    # Preparar dados para o gráfico
+    months_list = []
+    appointments_counts = []
+    medications_counts = []
+    procedures_counts = []
+    exams_counts = []
+    
+    current_date = start_date
+    while current_date <= end_date:
+        month_str = current_date.strftime('%b/%Y')
+        months_list.append(month_str)
+        
+        # Contagem de consultas
+        appointment_count = next(
+            (item['count'] for item in appointments_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        appointments_counts.append(appointment_count)
+        
+        # Contagem de medicamentos
+        medication_count = next(
+            (item['count'] for item in medications_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        medications_counts.append(medication_count)
+        
+        # Contagem de procedimentos
+        procedure_count = next(
+            (item['count'] for item in procedures_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        procedures_counts.append(procedure_count)
+        
+        # Contagem de exames
+        exam_count = next(
+            (item['count'] for item in exams_data if item['month'].strftime('%Y-%m') == current_date.strftime('%Y-%m')),
+            0
+        )
+        exams_counts.append(exam_count)
+        
+        current_date += timedelta(days=30)
+    
+    return JsonResponse({
+        'labels': months_list,
+        'appointments_data': appointments_counts,
+        'medications_data': medications_counts,
+        'procedures_data': procedures_counts,
+        'exams_data': exams_counts
+    })

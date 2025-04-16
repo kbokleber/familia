@@ -1,4 +1,5 @@
 {% extends 'healthcare/base_healthcare.html' %}
+{% load tz %}
 
 {% block page_title %}Medicamentos{% endblock %}
 
@@ -21,6 +22,7 @@
                         <th>Dosagem</th>
                         <th>Frequência</th>
                         <th>Data de Início</th>
+                        <th>Data de Término</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
@@ -32,23 +34,71 @@
                         <td>{{ medication.name }}</td>
                         <td>{{ medication.dosage }}</td>
                         <td>{{ medication.get_frequency_display }}</td>
-                        <td>{{ medication.start_date|date:"d/m/Y" }}</td>
                         <td>
-                            {% if medication.is_active %}
-                            <span class="badge bg-success">Ativo</span>
+                            {% if medication.start_date %}
+                                {{ medication.start_date|timezone:"America/Sao_Paulo"|date:"d/m/Y H:i" }}
                             {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
+                                <span class="text-muted">Não definida</span>
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'healthcare:medication_detail' medication.pk %}" 
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{% url 'healthcare:medication_edit' medication.pk %}" 
-                               class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
+                            {% if medication.end_date %}
+                                {{ medication.end_date|timezone:"America/Sao_Paulo"|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">Contínuo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if medication.start_date %}
+                                {% if medication.is_active %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'healthcare:medication_detail' medication.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'healthcare:medication_edit' medication.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ medication.pk }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal de Confirmação de Exclusão -->
+                            <div class="modal fade" id="deleteModal{{ medication.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ medication.pk }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="deleteModalLabel{{ medication.pk }}">Confirmar Exclusão</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Tem certeza que deseja excluir o medicamento <strong>{{ medication.name }}</strong>?</p>
+                                            <p class="text-danger">Esta ação não poderá ser desfeita.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <form method="post" action="{% url 'healthcare:medication_delete' medication.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Excluir</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

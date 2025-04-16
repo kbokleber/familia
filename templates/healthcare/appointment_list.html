@@ -35,10 +35,44 @@
                         <td>{{ appointment.location }}</td>
                         <td>{{ appointment.reason }}</td>
                         <td>
-                            <a href="{% url 'healthcare:appointment_edit' appointment.pk %}" 
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
+                            <div class="btn-group">
+                                <a href="{% url 'healthcare:appointment_edit' appointment.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ appointment.pk }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal de Confirmação -->
+                            <div class="modal fade" id="deleteModal{{ appointment.pk }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirmar Exclusão</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Tem certeza que deseja excluir a consulta do membro <strong>{{ appointment.family_member.name }}</strong> 
+                                               com o médico <strong>{{ appointment.doctor_name }}</strong>?</p>
+                                            <p class="text-danger"><small>Esta ação não poderá ser desfeita.</small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <form action="{% url 'healthcare:appointment_delete' appointment.pk %}" method="post" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="bi bi-trash"></i> Excluir
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

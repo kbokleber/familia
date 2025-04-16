@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FamilyMember, MedicalAppointment, MedicalProcedure
+from .models import FamilyMember, MedicalAppointment, MedicalProcedure, Medication, ProcedureDocument, AppointmentDocument
 
 @admin.register(FamilyMember)
 class FamilyMemberAdmin(admin.ModelAdmin):
@@ -21,3 +21,24 @@ class MedicalProcedureAdmin(admin.ModelAdmin):
     list_filter = ('procedure_date',)
     search_fields = ('family_member__name', 'procedure_name', 'doctor_name')
     ordering = ('-procedure_date',)
+
+@admin.register(Medication)
+class MedicationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'family_member', 'dosage', 'frequency', 'start_date')
+    list_filter = ('frequency', 'start_date')
+    search_fields = ('name', 'family_member__name', 'prescribed_by')
+    ordering = ('-created_at',)
+
+@admin.register(ProcedureDocument)
+class ProcedureDocumentAdmin(admin.ModelAdmin):
+    list_display = ('procedure', 'name', 'uploaded_at')
+    list_filter = ('uploaded_at',)
+    search_fields = ('procedure__procedure_name', 'name')
+    ordering = ('-uploaded_at',)
+
+@admin.register(AppointmentDocument)
+class AppointmentDocumentAdmin(admin.ModelAdmin):
+    list_display = ('appointment', 'name', 'uploaded_at')
+    list_filter = ('uploaded_at',)
+    search_fields = ('appointment__family_member__name', 'name')
+    ordering = ('-uploaded_at',)

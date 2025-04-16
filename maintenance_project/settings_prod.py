@@ -20,6 +20,7 @@ DATABASES = {
             'connect_timeout': 5,
             'client_encoding': 'UTF8',
             'sslmode': 'disable',
+            'options': '-c client_encoding=UTF8'
         }
     }
 }

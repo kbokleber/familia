@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% block page_title %}{% endblock %}{% endblock %}
+
+{% block main_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% block content_title %}{% endblock %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {% block page_actions %}{% endblock %}
+    </div>
+</div>
+
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            
+            {% block form_fields %}
+            <div class="row">
+                <div class="col-md-6">
+                    {% block form_left_column %}{% endblock %}
+                </div>
+                <div class="col-md-6">
+                    {% block form_right_column %}{% endblock %}
+                </div>
+            </div>
+            {% endblock %}
+
+            {% block form_attachments %}{% endblock %}
+
+            {% block form_actions %}
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 
+                    {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar {{ model_name }}{% endif %}
+                </button>
+            </div>
+            {% endblock %}
+        </form>
+    </div>
+</div>
+{% endblock %} 

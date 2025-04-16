@@ -1,45 +1,59 @@
-from django.views.generic.edit import CreateView, DeleteView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from .models import MaintenanceOrder, Equipment
-from django.views.generic import DetailView, ListView, TemplateView
+from django.contrib import messages
+from .forms import EquipmentForm, MaintenanceOrderForm
+from .widgets import MultipleFileInput
+from .fields import MultipleFileField
+from .models import Equipment, MaintenanceOrder, MaintenanceImage
+from django.views.generic import TemplateView
 from django.db.models import Q
 from datetime import datetime
 from django.utils import timezone
 from datetime import timedelta
 import json
+from django.http import HttpResponse
+from django.shortcuts import render, redirect
 
 class CreateOrderView(LoginRequiredMixin, CreateView):
     model = MaintenanceOrder
+    form_class = MaintenanceOrderForm
     template_name = 'maintenance/order_form.html'
-    fields = [
-        'equipment',
-        'status',
-        'service_provider',
-        'completion_date',
-        'cost',
-        'description',
-        'warranty_expiration',
-        'warranty_terms',
-        'invoice_number',
-        'invoice_file',
-        'notes'
-    ]
-    success_url = reverse_lazy('dashboard:home')
+    success_url = reverse_lazy('maintenance:order_list')
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Processa os anexos
+        for file in self.request.FILES.getlist('attachments'):
+            MaintenanceImage.objects.create(
+                maintenance_order=self.object,
+                image=file,
+                description=file.name
+            )
+        return response
 
 class CreateEquipmentView(LoginRequiredMixin, CreateView):
     model = Equipment
+    form_class = EquipmentForm
     template_name = 'maintenance/equipment_form.html'
-    fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
     success_url = reverse_lazy('dashboard:home')
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        
+        # Processa os arquivos anexados
+        files = self.request.FILES.getlist('attachments')
+        
+        for file in files:
+            EquipmentAttachment.objects.create(
+                equipment=form.instance,
+                file=file,
+                uploaded_by=self.request.user
+            )
+        
+        return response
 
 class DetailOrderView(LoginRequiredMixin, DetailView):
     model = MaintenanceOrder
@@ -47,7 +61,7 @@ class DetailOrderView(LoginRequiredMixin, DetailView):
     context_object_name = 'order'
 
     def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+        return MaintenanceOrder.objects.all()
 
 class DeleteOrderView(LoginRequiredMixin, DeleteView):
     model = MaintenanceOrder
@@ -55,35 +69,51 @@ class DeleteOrderView(LoginRequiredMixin, DeleteView):
     template_name = 'maintenance/order_confirm_delete.html'
 
     def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+        return MaintenanceOrder.objects.all()
 
 class UpdateOrderView(LoginRequiredMixin, UpdateView):
     model = MaintenanceOrder
+    form_class = MaintenanceOrderForm
     template_name = 'maintenance/order_form.html'
-    fields = [
-        'equipment',
-        'status',
-        'service_provider',
-        'completion_date',
-        'cost',
-        'description',
-        'warranty_expiration',
-        'warranty_terms',
-        'invoice_number',
-        'invoice_file',
-        'notes'
-    ]
-
-    def get_success_url(self):
-        return reverse_lazy('maintenance:order_detail', kwargs={'pk': self.object.pk})
-
-    def get_queryset(self):
-        return MaintenanceOrder.objects.filter(created_by=self.request.user)
+    success_url = reverse_lazy('maintenance:order_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_update'] = True
+        context['attachments'] = self.object.images.all()
         return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.object:
+            # Formata as datas para o formato esperado pelo input date
+            initial_data = {
+                'completion_date': self.object.completion_date.strftime('%Y-%m-%d') if self.object.completion_date else None,
+                'warranty_expiration': self.object.warranty_expiration.strftime('%Y-%m-%d') if self.object.warranty_expiration else None,
+            }
+            form.initial.update(initial_data)
+        return form
+
+    def get_queryset(self):
+        return MaintenanceOrder.objects.all()
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Processa os novos anexos
+        for file in self.request.FILES.getlist('attachments'):
+            MaintenanceImage.objects.create(
+                maintenance_order=self.object,
+                image=file,
+                description=file.name
+            )
+        return response
+
+class DeleteMaintenanceImageView(LoginRequiredMixin, DeleteView):
+    model = MaintenanceImage
+    success_url = reverse_lazy('maintenance:order_list')
+
+    def get_success_url(self):
+        return reverse_lazy('maintenance:order_update', kwargs={'pk': self.object.maintenance_order.pk})
 
 class MaintenanceOrderListView(LoginRequiredMixin, ListView):
     model = MaintenanceOrder
@@ -92,7 +122,7 @@ class MaintenanceOrderListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = MaintenanceOrder.objects.filter(created_by=self.request.user)
+        queryset = MaintenanceOrder.objects.all()
         
         # Filtro por equipamento
         equipment_id = self.request.GET.get('equipment')
@@ -121,44 +151,39 @@ class MaintenanceOrderListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['equipments'] = Equipment.objects.filter(owner=self.request.user)
+        context['equipments'] = Equipment.objects.all()
         context['selected_equipment'] = self.request.GET.get('equipment')
         context['start_date'] = self.request.GET.get('start_date')
         context['end_date'] = self.request.GET.get('end_date')
         return context
+
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'maintenance/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
 
         # Contagem de manutenções por status
         context['pending_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='pendente'
         ).count()
 
         context['in_progress_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='em_andamento'
         ).count()
 
         context['completed_count'] = MaintenanceOrder.objects.filter(
-            created_by=user,
             status='concluida'
         ).count()
 
         # Total de equipamentos
-        context['equipment_count'] = Equipment.objects.filter(
-            owner=user
-        ).count()
+        context['equipment_count'] = Equipment.objects.count()
 
         # Últimas 5 manutenções realizadas
-        context['recent_maintenance'] = MaintenanceOrder.objects.filter(
-            created_by=user
-        ).order_by('-completion_date', '-created_at')[:5]
+        context['recent_maintenance'] = MaintenanceOrder.objects.all().order_by('-completion_date', '-created_at')[:5]
 
         # Dados para o gráfico de custos
         months = []
@@ -167,10 +192,8 @@ class MaintenanceDashboardView(LoginRequiredMixin, TemplateView):
         for i in range(6):
             date = now - timedelta(days=30 * i)
             month_orders = MaintenanceOrder.objects.filter(
-                created_by=user,
-                status='concluida',
-                completion_date__year=date.year,
-                completion_date__month=date.month
+                created_at__year=date.year,
+                created_at__month=date.month
             )
             total_cost = sum(order.cost or 0 for order in month_orders)
             months.insert(0, date.strftime('%b/%Y'))
@@ -187,7 +210,7 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Equipment.objects.filter(owner=self.request.user)
+        queryset = Equipment.objects.all()
         
         # Filtro por tipo
         equipment_type = self.request.GET.get('type')
@@ -219,29 +242,54 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'equipment'
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['maintenance_orders'] = MaintenanceOrder.objects.filter(
-            equipment=self.object,
-            created_by=self.request.user
+            equipment=self.object
         ).order_by('-completion_date')
         return context
 
 class EquipmentUpdateView(LoginRequiredMixin, UpdateView):
     model = Equipment
+    form_class = EquipmentForm
     template_name = 'maintenance/equipment_form.html'
-    fields = ['name', 'type', 'brand', 'model', 'serial_number', 'purchase_date', 'notes']
     success_url = reverse_lazy('maintenance:equipment_list')
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_update'] = True
+        context['attachments'] = self.object.attachments.all()
         return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.object:
+            # Formata a data de compra para o formato esperado pelo input date
+            initial_data = {
+                'purchase_date': self.object.purchase_date.strftime('%Y-%m-%d') if self.object.purchase_date else None,
+            }
+            form.initial.update(initial_data)
+        return form
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        
+        # Processa os arquivos anexados
+        files = self.request.FILES.getlist('attachments')
+        
+        for file in files:
+            EquipmentAttachment.objects.create(
+                equipment=form.instance,
+                file=file,
+                uploaded_by=self.request.user
+            )
+        
+        return response
 
 class EquipmentDeleteView(LoginRequiredMixin, DeleteView):
     model = Equipment
@@ -249,4 +297,4 @@ class EquipmentDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('maintenance:equipment_list')
 
     def get_queryset(self):
-        return Equipment.objects.filter(owner=self.request.user)
+        return Equipment.objects.all()

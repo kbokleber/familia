@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from PIL import Image
@@ -36,6 +36,18 @@ class FamilyMember(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def age(self):
+        """Calcula a idade baseada na data de nascimento."""
+        if not self.birth_date:
+            return None
+        today = timezone.now().date()
+        age = today.year - self.birth_date.year
+        # Ajusta a idade se ainda não fez aniversário este ano
+        if today.month < self.birth_date.month or (today.month == self.birth_date.month and today.day < self.birth_date.day):
+            age -= 1
+        return age
+
 class MedicalAppointment(models.Model):
     family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE, verbose_name='Membro da Família')
     doctor_name = models.CharField('Nome do Médico', max_length=100)
@@ -56,14 +68,32 @@ class MedicalAppointment(models.Model):
         ordering = ['-appointment_date']
 
     def __str__(self):
-        return f"{self.family_member.name} - {self.appointment_date.strftime('%d/%m/%Y %H:%M')}"
+        return f"{self.family_member.name} - {self.doctor_name} - {self.appointment_date.strftime('%d/%m/%Y')}"
+
+class AppointmentDocument(models.Model):
+    appointment = models.ForeignKey(MedicalAppointment, on_delete=models.CASCADE, related_name='documents', verbose_name='Consulta')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='appointment_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
+    name = models.CharField('Nome do Arquivo', max_length=255)
+    uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento da Consulta'
+        verbose_name_plural = 'Documentos das Consultas'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.appointment}"
 
 class MedicalProcedure(models.Model):
     family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE, verbose_name='Membro da Família')
     procedure_name = models.CharField('Nome do Procedimento', max_length=200)
     procedure_date = models.DateTimeField('Data do Procedimento')
     doctor_name = models.CharField('Nome do Médico', max_length=100)
-    location = models.CharField('Local', max_length=200)
+    location = models.CharField('Local', max_length=200, blank=True)
     description = models.TextField('Descrição')
     results = models.TextField('Resultados', blank=True)
     follow_up_notes = models.TextField('Observações de Acompanhamento', blank=True)
@@ -77,7 +107,25 @@ class MedicalProcedure(models.Model):
         ordering = ['-procedure_date']
 
     def __str__(self):
-        return f"{self.family_member.name} - {self.procedure_name} ({self.procedure_date.strftime('%d/%m/%Y')})"
+        return f"{self.family_member.name} - {self.procedure_name} - {self.procedure_date.strftime('%d/%m/%Y')}"
+
+class ProcedureDocument(models.Model):
+    procedure = models.ForeignKey(MedicalProcedure, on_delete=models.CASCADE, related_name='documents', verbose_name='Procedimento')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='procedure_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
+    name = models.CharField('Nome do Arquivo', max_length=255)
+    uploaded_at = models.DateTimeField('Enviado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento do Procedimento'
+        verbose_name_plural = 'Documentos dos Procedimentos'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.procedure.procedure_name}"
 
 class Medication(models.Model):
     FREQUENCY_CHOICES = [
@@ -96,8 +144,8 @@ class Medication(models.Model):
     name = models.CharField(max_length=100, verbose_name='Nome do Medicamento')
     dosage = models.CharField(max_length=50, verbose_name='Dosagem')
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, verbose_name='Frequência')
-    start_date = models.DateField(verbose_name='Data de Início')
-    end_date = models.DateField(null=True, blank=True, verbose_name='Data de Término')
+    start_date = models.DateTimeField(verbose_name='Data e Hora de Início')
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name='Data e Hora de Término')
     prescribed_by = models.CharField(max_length=100, blank=True, verbose_name='Prescrito por')
     prescription_number = models.CharField(max_length=50, blank=True, verbose_name='Número da Receita')
     instructions = models.TextField(blank=True, verbose_name='Instruções Especiais')
@@ -115,14 +163,73 @@ class Medication(models.Model):
         return f"{self.name} - {self.family_member.name}"
 
     def clean(self):
+        if not self.start_date:
+            raise ValidationError('A data e hora de início são obrigatórias.')
         if self.end_date and self.end_date < self.start_date:
-            raise ValidationError('A data de término não pode ser anterior à data de início.')
+            raise ValidationError('A data e hora de término não podem ser anteriores à data e hora de início.')
 
     def get_absolute_url(self):
         return reverse('healthcare:medication_detail', kwargs={'pk': self.pk})
 
     def is_active(self):
-        today = timezone.now().date()
+        if not self.start_date:
+            return False
+        now = timezone.now()
         if self.end_date:
-            return self.start_date <= today <= self.end_date
-        return self.start_date <= today
+            return self.start_date <= now <= self.end_date
+        return self.start_date <= now
+
+class MedicationDocument(models.Model):
+    medication = models.ForeignKey(Medication, on_delete=models.CASCADE, related_name='documents')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='medication_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def is_image(self):
+        """Verifica se o arquivo é uma imagem"""
+        return self.file.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
+
+    @property
+    def is_document(self):
+        """Verifica se o arquivo é um documento"""
+        return self.file.name.lower().endswith(('.pdf', '.doc', '.docx', '.txt', '.rtf'))
+
+    def __str__(self):
+        return f"{self.name} - {self.medication.name}"
+
+    class Meta:
+        verbose_name = 'Documento do Medicamento'
+        verbose_name_plural = 'Documentos dos Medicamentos'
+
+class Exam(models.Model):
+    family_member = models.ForeignKey(FamilyMember, on_delete=models.CASCADE)
+    exam_name = models.CharField(max_length=200)
+    doctor_name = models.CharField(max_length=100)
+    exam_date = models.DateTimeField()
+    next_exam_date = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=200)
+    notes = models.TextField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.family_member.name} - {self.exam_name} - {self.exam_date.strftime('%d/%m/%Y')}"
+
+class ExamDocument(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='documents')
+    file = models.FileField(
+        'Arquivo',
+        upload_to='exam_documents/',
+        validators=[FileExtensionValidator(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'])]
+    )
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.exam}"

@@ -48,4 +48,12 @@ media/
 .DS_Store
 *.bak
 *.tmp
-*.temp 
+*.temp
+
+# Exclusões adicionais
+.env
+*.pyc
+*.sqlite3
+staticfiles/
+.venv/
+``` 

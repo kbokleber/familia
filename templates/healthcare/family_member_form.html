@@ -1,102 +1,53 @@
-{% extends 'healthcare/base_healthcare.html' %}
+{% extends 'form_base.html' %}
 {% load crispy_forms_tags %}
 
 {% block page_title %}
-    {% if form.instance.pk %}Editar Membro{% else %}Novo Membro{% endif %}
+    {% if form.instance.pk %}Editar Membro da Família{% else %}Novo Membro da Família{% endif %}
 {% endblock %}
 
-{% block healthcare_content %}
-<div class="card">
-    <div class="card-body">
-        {% if form.errors %}
-        <div class="alert alert-danger">
-            <h5>Por favor, corrija os erros abaixo:</h5>
-            {{ form.non_field_errors }}
-            {% for field in form %}
-                {% if field.errors %}
-                    <div class="mb-2">
-                        <strong>{{ field.label }}:</strong>
-                        {{ field.errors }}
+{% block content_title %}
+    {% if form.instance.pk %}Editar Membro da Família{% else %}Novo Membro da Família{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'healthcare:family_member_list' %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Voltar
+</a>
+{% endblock %}
+
+{% block form_fields %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-body text-center">
+                {% if form.instance.photo %}
+                    <img src="{{ form.instance.photo.url }}" alt="Foto do membro" class="img-thumbnail mb-3" style="max-width: 200px;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px; margin: 0 auto;">
+                        <i class="bi bi-person-circle" style="font-size: 8rem; color: #dee2e6;"></i>
                     </div>
                 {% endif %}
-            {% endfor %}
+                {{ form.photo|as_crispy_field }}
+            </div>
         </div>
-        {% endif %}
-
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <div class="text-center">
-                        {% if form.instance.photo %}
-                            <img src="{{ form.instance.photo.url }}" alt="Foto do membro" class="img-thumbnail mb-3" style="max-width: 200px;">
-                        {% else %}
-                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px; margin: 0 auto;">
-                                <i class="bi bi-person-circle" style="font-size: 8rem; color: #dee2e6;"></i>
-                            </div>
-                        {% endif %}
-                        <div class="d-none">
-                            {{ form.photo|as_crispy_field }}
-                        </div>
-                        <div class="custom-file-upload">
-                            <label for="{{ form.photo.id_for_label }}" class="btn btn-outline-primary">
-                                <i class="bi bi-camera"></i> Alterar Foto
-                            </label>
-                            <input type="file" name="{{ form.photo.name }}" id="{{ form.photo.id_for_label }}" 
-                                   accept="image/*" class="d-none" onchange="previewImage(this)">
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="row">
-                        <div class="col-md-6">
-                            {{ form.name|as_crispy_field }}
-                            {{ form.birth_date|as_crispy_field }}
-                            {{ form.gender|as_crispy_field }}
-                            {{ form.relationship|as_crispy_field }}
-                            {{ form.blood_type|as_crispy_field }}
-                        </div>
-                        <div class="col-md-6">
-                            {{ form.emergency_contact|as_crispy_field }}
-                            {{ form.emergency_phone|as_crispy_field }}
-                            {{ form.allergies|as_crispy_field }}
-                            {{ form.chronic_conditions|as_crispy_field }}
-                            {{ form.notes|as_crispy_field }}
-                        </div>
-                    </div>
-                </div>
+    </div>
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-6">
+                {{ form.name|as_crispy_field }}
+                {{ form.birth_date|as_crispy_field }}
+                {{ form.gender|as_crispy_field }}
+                {{ form.relationship|as_crispy_field }}
+                {{ form.blood_type|as_crispy_field }}
+                {{ form.emergency_contact|as_crispy_field }}
+                {{ form.emergency_phone|as_crispy_field }}
             </div>
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Salvar
-                </button>
-                <a href="{% url 'healthcare:family_member_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Cancelar
-                </a>
+            <div class="col-md-6">
+                {{ form.allergies|as_crispy_field }}
+                {{ form.chronic_conditions|as_crispy_field }}
+                {{ form.notes|as_crispy_field }}
             </div>
-        </form>
+        </div>
     </div>
 </div>
-
-<script>
-function previewImage(input) {
-    if (input.files && input.files[0]) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var preview = document.querySelector('.img-thumbnail');
-            if (preview) {
-                preview.src = e.target.result;
-            } else {
-                var newPreview = document.createElement('img');
-                newPreview.src = e.target.result;
-                newPreview.className = 'img-thumbnail mb-3';
-                newPreview.style.maxWidth = '200px';
-                newPreview.alt = 'Foto do membro';
-                document.querySelector('.bg-light').replaceWith(newPreview);
-            }
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-</script>
 {% endblock %} 
