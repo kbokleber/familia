@@ -125,7 +125,7 @@ def healthcare_dashboard(request):
 @login_required
 def family_member_list(request):
     """Lista todos os membros da família"""
-    members = FamilyMember.objects.all()
+    members = FamilyMember.objects.all().order_by('order', 'name')
     context = {
         'page_title': 'Membros da Família',
         'family_members': members
@@ -155,7 +155,16 @@ def family_member_create(request):
     if request.method == 'POST':
         form = FamilyMemberForm(request.POST, request.FILES)
         if form.is_valid():
-            member = form.save()
+            member = form.save(commit=False)
+            if 'photo' in request.FILES:
+                photo_file = request.FILES['photo']
+                print(f"Processando foto: {photo_file.name}, tamanho: {photo_file.size} bytes")
+                member.set_photo(photo_file)
+                if member.photo:
+                    print(f"Foto salva com sucesso. Tamanho após processamento: {len(member.photo)} bytes")
+                else:
+                    print("Erro: Foto não foi salva corretamente")
+            member.save()
             messages.success(request, 'Membro da família cadastrado com sucesso!')
             return redirect('healthcare:family_member_list')
         else:
@@ -178,11 +187,41 @@ def family_member_edit(request, pk):
     if request.method == 'POST':
         form = FamilyMemberForm(request.POST, request.FILES, instance=member)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Membro da família atualizado com sucesso!')
-            return redirect('healthcare:family_member_list')
+            member = form.save(commit=False)
+            
+            # Verifica se deve limpar a foto
+            if request.POST.get('clear_photo') == 'true':
+                member.photo = None
+                member.photo_type = None
+                print("[DEBUG] Removendo foto do membro")
+            # Se não deve limpar, processa a nova foto se foi enviada
+            elif 'photo' in request.FILES:
+                photo_file = request.FILES['photo']
+                print(f"[DEBUG] Recebendo foto no POST: {photo_file.name}, tamanho: {photo_file.size} bytes")
+                print(f"[DEBUG] Tipo MIME: {photo_file.content_type}")
+                
+                # Processa a foto
+                success = member.set_photo(photo_file)
+                if success:
+                    print(f"[DEBUG] Foto processada com sucesso. Tamanho: {len(member.photo)} bytes, Tipo: {member.photo_type}")
+                else:
+                    print("[ERROR] Falha ao processar a foto")
+                    messages.error(request, 'Erro ao processar a foto. Por favor, tente novamente.')
+                    return redirect('healthcare:family_member_edit', pk=pk)
+            
+            try:
+                member.save()
+                print("[DEBUG] Membro da família salvo com sucesso")
+                messages.success(request, 'Membro da família atualizado com sucesso!')
+                return redirect('healthcare:family_member_list')
+            except Exception as e:
+                print(f"[ERROR] Erro ao salvar membro da família: {str(e)}")
+                messages.error(request, 'Erro ao salvar as alterações. Por favor, tente novamente.')
+                return redirect('healthcare:family_member_edit', pk=pk)
+        else:
+            print("[DEBUG] Formulário inválido:", form.errors)
+            messages.error(request, 'Por favor, corrija os erros abaixo.')
     else:
-        # Formata a data de nascimento para o formato esperado pelo input date
         initial_data = {
             'birth_date': member.birth_date.strftime('%Y-%m-%d') if member.birth_date else None
         }
@@ -620,3 +659,29 @@ def chart_data(request):
         'procedures_data': procedures_counts,
         'exams_data': exams_counts
     })
+
+@login_required
+def save_family_members_order(request):
+    """Salva a nova ordem dos membros da família."""
+    if request.method == 'POST':
+        try:
+            member_ids = request.POST.getlist('member_ids[]')
+            print(f"[DEBUG] Recebendo nova ordem de membros: {member_ids}")
+            
+            for index, member_id in enumerate(member_ids):
+                member = FamilyMember.objects.get(pk=member_id)
+                print(f"[DEBUG] Atualizando membro {member.name} (ID: {member_id}) para ordem {index}")
+                member.order = index
+                member.save()
+            
+            # Verificar a ordem após salvar
+            all_members = FamilyMember.objects.all().order_by('order', 'name')
+            print("[DEBUG] Ordem atual dos membros após salvar:")
+            for member in all_members:
+                print(f"[DEBUG] - {member.name}: ordem {member.order}")
+            
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            print(f"[ERROR] Erro ao salvar ordem: {str(e)}")
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Método não permitido'}, status=405)

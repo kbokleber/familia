@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from PIL import Image
 import os
+import base64
+from io import BytesIO
 
 class FamilyMember(models.Model):
     GENDER_CHOICES = [
@@ -15,7 +17,8 @@ class FamilyMember(models.Model):
     ]
 
     name = models.CharField('Nome', max_length=100)
-    photo = models.ImageField('Foto', upload_to='family_members/', null=True, blank=True)
+    photo = models.BinaryField('Foto', null=True, blank=True, editable=True)
+    photo_type = models.CharField('Tipo da Foto', max_length=10, null=True, blank=True)  # Para armazenar o tipo da imagem (png, jpeg, etc)
     birth_date = models.DateField('Data de Nascimento')
     gender = models.CharField('Gênero', max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
     relationship = models.CharField('Parentesco', max_length=50, null=True, blank=True)
@@ -25,16 +28,108 @@ class FamilyMember(models.Model):
     emergency_contact = models.CharField('Contato de Emergência', max_length=100, null=True, blank=True)
     emergency_phone = models.CharField('Telefone de Emergência', max_length=20, null=True, blank=True)
     notes = models.TextField('Observações', blank=True)
+    order = models.IntegerField('Ordem', default=0)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
     updated_at = models.DateTimeField('Atualizado em', auto_now=True)
 
     class Meta:
         verbose_name = 'Membro da Família'
         verbose_name_plural = 'Membros da Família'
-        ordering = ['name']
+        ordering = ['order', 'name']
 
     def __str__(self):
         return self.name
+
+    def set_photo(self, image):
+        """
+        Recebe um objeto de imagem do Django (InMemoryUploadedFile),
+        redimensiona se necessário e salva como dados binários no atributo do modelo.
+        A persistência é feita pela chamada .save() na view.
+        """
+        if image:
+            print(f"[DEBUG] Processando imagem: {image.name} - Tamanho: {image.size} bytes")
+            print(f"[DEBUG] Tipo do arquivo original: {image.content_type}")
+            
+            try:
+                # Determina o formato baseado na extensão do arquivo
+                file_ext = os.path.splitext(image.name)[1].lower()
+                if file_ext in ['.jpg', '.jpeg']:
+                    save_format = 'jpeg'
+                elif file_ext == '.png':
+                    save_format = 'png'
+                else:
+                    print(f"[ERROR] Formato de arquivo não suportado: {file_ext}")
+                    return False
+
+                img = Image.open(image)
+                print(f"[DEBUG] Imagem aberta com PIL - Modo: {img.mode}, Tamanho: {img.size}")
+
+                # Converte para RGB se necessário
+                if img.mode not in ('RGB', 'RGBA'):
+                    print(f"[DEBUG] Convertendo imagem de {img.mode} para RGB")
+                    img = img.convert('RGB')
+
+                # Redimensiona se a imagem for muito grande
+                max_size = (800, 800)
+                if img.size[0] > max_size[0] or img.size[1] > max_size[1]:
+                    print(f"[DEBUG] Redimensionando imagem de {img.size} para {max_size}")
+                    img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                buffer = BytesIO()
+                
+                # Salva a imagem no formato apropriado
+                if save_format == 'jpeg':
+                    img.save(buffer, format='JPEG', quality=85, optimize=True)
+                else:  # PNG
+                    img.save(buffer, format='PNG', optimize=True)
+                
+                print(f"[DEBUG] Imagem salva em buffer com formato {save_format.upper()}")
+                
+                buffer.seek(0)
+                self.photo = buffer.getvalue()
+                self.photo_type = save_format
+                print(f"[DEBUG] Atributos photo e photo_type definidos. Tamanho: {len(self.photo)} bytes, Tipo: {self.photo_type}")
+                
+                buffer.close()
+                return True
+            except Exception as e:
+                print(f"[ERROR] Erro ao processar imagem: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                self.photo = None
+                self.photo_type = None
+                return False
+        else:
+            print("[DEBUG] Nenhuma imagem fornecida, limpando foto existente.")
+            self.photo = None
+            self.photo_type = None
+            return True
+
+    def get_photo_url(self):
+        """
+        Retorna a URL da foto em formato base64 para exibição em templates.
+        Retorna None se não houver foto ou o tipo for inválido.
+        """
+        if self.photo and self.photo_type:
+            try:
+                # Verifica se o tipo é suportado
+                photo_type = self.photo_type.lower().strip()
+                if photo_type not in ['jpeg', 'png']:
+                    print(f"[ERROR] Tipo de imagem não suportado: {photo_type}")
+                    return None
+
+                # Converte a foto para base64
+                photo_base64 = base64.b64encode(self.photo).decode('utf-8')
+                
+                # Gera a URL com o tipo de imagem correto
+                mime_type = 'jpeg' if photo_type == 'jpeg' else 'png'
+                url = f"data:image/{mime_type};base64,{photo_base64}"
+                print(f"[DEBUG] URL da foto gerada com sucesso. Tipo: {mime_type}")
+                return url
+            except Exception as e:
+                print(f"[ERROR] Erro ao gerar URL da foto: {str(e)}")
+                return None
+        return None
 
     @property
     def age(self):

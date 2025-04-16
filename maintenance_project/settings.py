@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'maintenance',
     'dashboard',
     'healthcare.apps.HealthcareConfig',  # New healthcare app
+    'finances',  # Nova aplicação de finanças
 ]
 
 MIDDLEWARE = [

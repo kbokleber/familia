@@ -3,6 +3,37 @@
 
 {% block page_title %}Membros da Família{% endblock %}
 
+{% block extra_css %}
+<style>
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+    
+    .card {
+        cursor: move;
+        cursor: -webkit-grabbing;
+    }
+    
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transition: box-shadow 0.3s ease-in-out;
+    }
+    
+    .drag-handle {
+        cursor: move;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #6c757d;
+        opacity: 0.5;
+    }
+    
+    .drag-handle:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
 {% block healthcare_content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,15 +44,22 @@
         </div>
     </div>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="family-members-grid">
         {% for member in family_members %}
-        <div class="col">
-            <div class="card h-100">
+        <div class="col" data-id="{{ member.pk }}">
+            <div class="card h-100 position-relative">
+                <div class="drag-handle">
+                    <i class="bi bi-grip-vertical"></i>
+                </div>
                 <div class="card-body text-center">
                     <div class="text-center mb-3">
                         <div class="d-inline-block">
-                            {% if member.photo %}
-                                <img src="{{ member.photo.url }}" alt="{{ member.name }}" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+                            {% if member.get_photo_url %}
+                                <img src="{{ member.get_photo_url }}" 
+                                     alt="{{ member.name }}" 
+                                     class="rounded-circle" 
+                                     style="width: 120px; height: 120px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.src=''; this.parentElement.innerHTML='<div class=\'bg-light rounded-circle d-flex align-items-center justify-content-center\' style=\'width: 120px; height: 120px; margin: 0 auto;\'><i class=\'bi bi-person-circle\' style=\'font-size: 6rem; color: #dee2e6;\'></i></div>';">
                             {% else %}
                                 <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px; margin: 0 auto;">
                                     <i class="bi bi-person-circle" style="font-size: 6rem; color: #dee2e6;"></i>
@@ -92,4 +130,47 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Adiciona Sortable.js -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grid = document.getElementById('family-members-grid');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    new Sortable(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-handle',
+        onEnd: function(evt) {
+            const itemIds = Array.from(grid.children)
+                .map(item => item.dataset.id);
+            
+            // Envia a nova ordem para o servidor
+            fetch('{% url "healthcare:save_family_members_order" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: 'member_ids[]=' + itemIds.join('&member_ids[]=')
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Opcional: mostrar mensagem de sucesso
+                    console.log('Ordem salva com sucesso');
+                } else {
+                    console.error('Erro ao salvar ordem:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar ordem:', error);
+            });
+        }
+    });
+});
+</script>
 {% endblock %} 

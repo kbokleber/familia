@@ -17,8 +17,8 @@
     <div class="col-md-4 mb-4">
         <div class="card">
             <div class="card-body text-center">
-                {% if member.photo %}
-                    <img src="{{ member.photo.url }}" alt="Foto do membro" class="img-thumbnail mb-3" style="max-width: 200px;">
+                {% if member.get_photo_url %}
+                    <img src="{{ member.get_photo_url }}" alt="Foto do membro" class="img-thumbnail mb-3" style="max-width: 200px;">
                 {% else %}
                     <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px; margin: 0 auto;">
                         <i class="bi bi-person-circle" style="font-size: 8rem; color: #dee2e6;"></i>

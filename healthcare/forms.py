@@ -4,10 +4,22 @@ from .widgets import MultipleFileInput
 from .fields import MultipleFileField
 
 class FamilyMemberForm(forms.ModelForm):
+    photo = forms.ImageField(
+        required=False,
+        label='Foto',
+        widget=forms.FileInput(
+            attrs={
+                'class': 'form-control',
+                'accept': 'image/jpeg,image/jpg,image/png'
+            }
+        ),
+        help_text='Selecione uma imagem JPG ou PNG'
+    )
+
     class Meta:
         model = FamilyMember
         fields = [
-            'name', 'birth_date', 'gender', 'relationship', 'photo',
+            'name', 'birth_date', 'gender', 'relationship',
             'blood_type', 'allergies', 'chronic_conditions', 'emergency_contact',
             'emergency_phone', 'notes'
         ]

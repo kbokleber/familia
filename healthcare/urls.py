@@ -14,6 +14,7 @@ urlpatterns = [
     path('members/create/', views.family_member_create, name='family_member_create'),
     path('members/<int:pk>/edit/', views.family_member_edit, name='family_member_edit'),
     path('members/<int:pk>/delete/', views.family_member_delete, name='family_member_delete'),
+    path('members/save-order/', views.save_family_members_order, name='save_family_members_order'),
     
     # Medical Appointment URLs
     path('appointments/', views.appointment_list, name='appointment_list'),

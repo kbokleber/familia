@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Financeiro{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Dashboard Financeiro</h1>
+    
+    <div class="card">
+        <div class="card-body p-0">
+            <!-- Iframe do Looker Studio com altura responsiva -->
+            <iframe 
+                src="https://lookerstudio.google.com/embed/reporting/70a845aa-34f6-414c-a203-c81377151b33/page/bKGAD"
+                style="width: 100%; height: calc(100vh - 200px); border: 0;"
+                frameborder="0"
+                allowfullscreen
+                sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+            </iframe>
+        </div>
+    </div>
+</div>
+{% endblock %} 
