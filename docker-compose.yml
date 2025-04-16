@@ -43,6 +43,12 @@ services:
     ports:
       - "8001:8001"
     environment:
+      - DJANGO_SETTINGS_MODULE=maintenance_project.settings_prod
+      - POSTGRES_DB=sistema_familiar_db
+      - POSTGRES_USER=sistema_familiar_user
+      - POSTGRES_PASSWORD=SuaSenhaSeguraParaDB2024
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
       - DJANGO_SETTINGS_MODULE=maintenance_project.settings_dev
       - DATABASE_URL=postgres://postgres:postgres@db:5432/sistema_familiar
       - DOCKER_CONTAINER=true
@@ -55,16 +61,6 @@ services:
       - db
     networks:
       - sistema-familiar-net
-    deploy:
-      mode: replicated
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
 
 volumes:
   postgres_data:
@@ -77,4 +73,4 @@ volumes:
 networks:
   sistema-familiar-net:
     driver: overlay
-    attachable: true 
+    attachable: true
