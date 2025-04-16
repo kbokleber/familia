@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ page_title }}</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Formulário para adicionar nova configuração -->
+                    <div class="mb-4">
+                        <button class="btn btn-primary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#newConfigForm">
+                            <i class="bi bi-plus-circle me-2"></i>Nova Configuração
+                        </button>
+                        
+                        <div class="collapse" id="newConfigForm">
+                            <div class="card card-body bg-light">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-3 mb-3">
+                                            <label for="{{ form.key.id_for_label }}" class="form-label">Chave</label>
+                                            {{ form.key }}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.value.id_for_label }}" class="form-label">Valor</label>
+                                            {{ form.value }}
+                                        </div>
+                                        <div class="col-md-5 mb-3">
+                                            <label for="{{ form.description.id_for_label }}" class="form-label">Descrição</label>
+                                            {{ form.description }}
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-circle me-2"></i>Salvar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de configurações -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Chave</th>
+                                    <th>Valor</th>
+                                    <th>Descrição</th>
+                                    <th>Última Atualização</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configs %}
+                                <tr>
+                                    <td>{{ config.key }}</td>
+                                    <td>{{ config.value }}</td>
+                                    <td>{{ config.description }}</td>
+                                    <td>{{ config.updated_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editModal{{ config.pk }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal{{ config.pk }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Modal de Edição -->
+                                <div class="modal fade" id="editModal{{ config.pk }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'core:system_config_edit' config.pk %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Editar Configuração</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Chave</label>
+                                                        <input type="text" class="form-control" name="key" value="{{ config.key }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Valor</label>
+                                                        <input type="text" class="form-control" name="value" value="{{ config.value }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Descrição</label>
+                                                        <textarea class="form-control" name="description" rows="3">{{ config.description }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-primary">Salvar</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal de Exclusão -->
+                                <div class="modal fade" id="deleteModal{{ config.pk }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmar Exclusão</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Tem certeza que deseja excluir a configuração "{{ config.key }}"?</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <form method="post" action="{% url 'core:system_config_delete' config.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Excluir</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            Nenhuma configuração cadastrada.
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -21,15 +21,12 @@
     
     .drag-handle {
         cursor: move;
-        position: absolute;
-        top: 10px;
-        right: 10px;
+        padding: 8px;
         color: #6c757d;
-        opacity: 0.5;
     }
     
     .drag-handle:hover {
-        opacity: 1;
+        color: #495057;
     }
 
     .toast-container {
@@ -192,35 +189,26 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('IDs coletados:', itemIds); // Debug
             
-            const formData = new FormData();
-            itemIds.forEach(id => {
-                if (id) { // Só adiciona se o ID existir
-                    formData.append('member_ids[]', id);
-                    console.log('Adicionando ID:', id); // Debug
-                }
-            });
-            
             // Envia a nova ordem para o servidor
             fetch('{% url "healthcare:save_family_members_order" %}', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': csrfToken
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: formData
+                body: 'member_ids[]=' + itemIds.join('&member_ids[]=')
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    showToast('Ordem atualizada com sucesso!');
-                    console.log('Ordem salva com sucesso');
+                    showToast('Ordem dos membros atualizada com sucesso!');
                 } else {
-                    showToast('Erro ao salvar a ordem: ' + data.message, 'danger');
-                    console.error('Erro ao salvar ordem:', data.message);
+                    showToast('Erro ao atualizar a ordem dos membros: ' + (data.message || 'Erro desconhecido'), 'danger');
                 }
             })
             .catch(error => {
-                showToast('Erro ao salvar a ordem. Tente novamente.', 'danger');
-                console.error('Erro ao salvar ordem:', error);
+                console.error('Erro:', error);
+                showToast('Erro ao atualizar a ordem dos membros.', 'danger');
             });
         }
     });
