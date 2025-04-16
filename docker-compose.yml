@@ -15,12 +15,21 @@ services:
       - sistema-familiar-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sistema_familiar"]
-      interval: 10s
       interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
   web:
-    image: kbokleber/sistema-familiar:1.0.0
-    entrypoint: ["/app/entrypoint.sh"]
     build: 
       context: .
       args:
